@@ -52,6 +52,6 @@ class PingPong(NSQHandler):
 import nsq
 
 # MyHandler(topic="test", channel="test")
-PingPong("pingpong", "pingpong")
+PingPong("test", "pingpong")
 
 nsq.run()

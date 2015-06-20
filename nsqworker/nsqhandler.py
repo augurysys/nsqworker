@@ -32,11 +32,11 @@ else:
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
-        '''
+        """
         :type writer: nsq.Writer
 
         This is a wrapper around nsqworker.ThreadWorker
-        '''
+        """
         super(NSQHandler, self).__init__()
         self.logger = self.__class__.get_logger()
         self.io_loop = ioloop.IOLoop.instance()
@@ -68,8 +68,8 @@ class NSQHandler(NSQWriter):
         return logger
 
     def register_route(self, route, handler_func):
-        ''' Basic route register
-        '''
+        """ Basic route register
+        """
         # Notice: conflicting routes are intentionally allowed
         # so multiple handler functions can be invoked for a single route
 
@@ -78,14 +78,14 @@ class NSQHandler(NSQWriter):
         self.routes.append((route, handler_func))
 
     def route_message(self, message, route_field="name"):
-        ''' Basic message router
+        """ Basic message router
 
         The basic functionality assumes that a message is json encoded
         that the field to route for is "name"
         and that the route finding method is regex matching
 
         Handlers for the same route will be run sequentially
-        '''
+        """
         try:
             message = json.loads(message)
         except ValueError:
@@ -113,15 +113,15 @@ class NSQHandler(NSQWriter):
                     handler.__name__, message, e.message))
 
     def handle_message(self, message):
-        ''' Basic message handler
-        '''
+        """ Basic message handler
+        """
         self.logger.debug("Received message: {}".format(message.body))
         self.route_message(message.body)
         self.logger.debug("Finished handling message: {}".format(message.body))
 
     def handle_exception(self, message, e):
-        ''' Basic error handler
-        '''
+        """ Basic error handler
+        """
         error = "message {} raised an exception: {}. Message body: {}".format(message.id, e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
