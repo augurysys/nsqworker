@@ -1,6 +1,5 @@
 import os
 import sys
-import functools
 import traceback
 import logging
 import json
@@ -8,8 +7,8 @@ import re
 
 from tornado import ioloop
 import nsq
-from nsq import Error
 from nsqworker import ThreadWorker
+from nsqwriter import NSQWriter
 
 from mdict import MDict
 
@@ -31,15 +30,15 @@ else:
     raise EnvironmentError("Please set NSQD_TCP_ADDRESSES / LOOKUPD_HTTP_ADDRESSES.")
 
 
-class NSQHandler(object):
+class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
         '''
         :type writer: nsq.Writer
 
         This is a wrapper around nsqworker.ThreadWorker
         '''
+        super(NSQHandler, self).__init__()
         self.logger = self.__class__.get_logger()
-        self.writer = self.__class__.get_writer()
         self.io_loop = ioloop.IOLoop.instance()
 
         ThreadWorker(
@@ -51,11 +50,6 @@ class NSQHandler(object):
         ).subscribe_worker()
 
         self.routes = []
-
-    @staticmethod
-    def get_writer():
-        if NSQD_TCP_ADDRESSES:
-            return nsq.Writer(nsqd_tcp_addresses=NSQD_TCP_ADDRESSES)
 
     @classmethod
     def get_logger(cls, name=None):
@@ -72,50 +66,6 @@ class NSQHandler(object):
             logger.propagate = 0
 
         return logger
-
-    def send_message(self, topic, message):
-        ''' A wrapper around io_loop.add_callback and writer.pub for sending a message
-
-        :type topic: str
-        :type message: str
-        '''
-        if self.writer is None:
-            raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
-
-        callback = functools.partial(self.finish_pub, topic=topic, payload=message)
-        self.io_loop.add_callback(self.writer.pub, topic, message, callback)
-
-    def send_messages(self, topic, messages):
-        ''' A wrapper around io_loop.add_callback and writer.mpub for sending multiple messages at once
-
-        :type topic: str
-        :type messages: list[str]
-        '''
-        if self.writer is None:
-            raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
-
-        callback = functools.partial(self.finish_pub, topic=topic, payload=messages)
-        self.io_loop.add_callback(self.writer.mpub, topic, messages, callback)
-
-    def finish_pub(self, conn, data, topic, payload):
-        '''
-        This method should serve as a callback to the publish/multi-publish method
-        It should parse the arguments to decide if the publish was successful or not
-        If the publish was not successful, after a pre-defined sleep period, try and resend the message/multi-message
-        '''
-        delay = 1
-
-        # Parse conn and data to decide whether message failed or not
-        if isinstance(data, Error) or conn is None or data != 'OK':
-            # Message failed, re-send
-            self.logger.error("Message failed, waiting {} seconds before trying again..".format(delay))
-            # Take a short break and then try to resend the message
-            if isinstance(payload, str):
-                self.io_loop.call_later(delay, self.send_message, topic, payload)
-            elif isinstance(payload, list):
-                self.io_loop.call_later(delay, self.send_messages, topic, payload)
-        else:
-            self.logger.debug("Sent message {}.".format(payload))
 
     def register_route(self, route, handler_func):
         ''' Basic route register
