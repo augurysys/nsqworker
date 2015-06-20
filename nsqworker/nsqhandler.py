@@ -19,10 +19,6 @@ NSQD_TCP_ADDRESSES.remove("")
 LOOKUPD_HTTP_ADDRESSES = os.environ.get('LOOKUPD_HTTP_ADDRESSES', "").split(",")
 LOOKUPD_HTTP_ADDRESSES.remove("")
 
-# Temporary
-NSQD_TCP_ADDRESSES = ["localhost:4150"]
-LOOKUPD_HTTP_ADDRESSES = ["localhost:4161"]
-
 kwargs = {}
 
 if LOOKUPD_HTTP_ADDRESSES:

@@ -1,6 +1,6 @@
 from nsqhandler import NSQHandler
 import json
-
+import time
 
 class MyHandler(NSQHandler):
     def __init__(self, topic, channel):
@@ -32,8 +32,26 @@ class MyHandler(NSQHandler):
         self.logger.info("The report has been sent")
 
 
+class PingPong(NSQHandler):
+    def __init__(self, topic, channel):
+        super(PingPong, self).__init__(topic, channel)
+
+        self.register_route("request.ping", self.ping)
+        self.register_route("request.pong", self.pong)
+
+    def ping(self, message):
+        self.logger.info("Ping")
+        time.sleep(1)
+        self.send_message("test", json.dumps(dict(name="request.pong")))
+
+    def pong(self, message):
+        self.logger.info("Pong")
+        time.sleep(1)
+        self.send_message("test", json.dumps(dict(name="request.ping")))
+
 import nsq
 
 MyHandler(topic="test", channel="test")
+PingPong("test", "pingpong")
 
 nsq.run()
