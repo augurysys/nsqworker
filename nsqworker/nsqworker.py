@@ -21,8 +21,12 @@ class ThreadWorker:
         self.exception_handler = exception_handler
         self.timeout = timeout
 
-        self.logger = logging.getLogger("ThreadWorker")
-        if not self.logger.handlers:
+        self.logger = ThreadWorker.get_logger()
+
+    @staticmethod
+    def get_logger():
+        logger = logging.getLogger("ThreadWorker")
+        if not logger.handlers:
             parser = argparse.ArgumentParser()
             parser.add_argument('--loglevel', nargs='?', help='log level', default='INFO')
             args = parser.parse_args()
@@ -37,9 +41,11 @@ class ThreadWorker:
             handler.setFormatter(formatter)
             handler.setLevel(level)
 
-            self.logger.addHandler(handler)
-            self.logger.setLevel(level)
-            self.logger.propagate = 0
+            logger.addHandler(handler)
+            logger.setLevel(level)
+            logger.propagate = 0
+
+        return logger
 
     @run_on_executor
     def _run_threaded_handler(self, message):
@@ -93,14 +99,13 @@ class ThreadWorker:
         self.logger.debug("Finished handling message %s", message.id)
 
     def subscribe_worker(self):
-        self.logger.info("Added an handler for NSQD messages on topic '%s', channel '%s'",
-                         self.kwargs["topic"], self.kwargs["channel"])
-
-        self.logger.info("handling messages with %d threads", self.concurrency)
-
         kwargs = self.kwargs
 
         kwargs["message_handler"] = self._message_handler
         kwargs["max_in_flight"] = self.concurrency
 
-        nsq.Reader(**kwargs)
+        self.reader = nsq.Reader(**kwargs)
+
+        self.logger.info("Added an handler for NSQD messages on topic {}, channel {}.".format(self.kwargs["topic"],
+                                                                                              self.kwargs["channel"]))
+        self.logger.info("Handling messages with {} thread.".format(self.concurrency))

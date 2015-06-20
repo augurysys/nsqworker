@@ -11,13 +11,15 @@ import nsq
 from nsq import Error
 from nsqworker import ThreadWorker
 
-from mdict import *
+from mdict import MDict
 
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
-NSQD_TCP_ADDRESSES.remove("")
+if "" in NSQD_TCP_ADDRESSES:
+    NSQD_TCP_ADDRESSES.remove("")
 LOOKUPD_HTTP_ADDRESSES = os.environ.get('LOOKUPD_HTTP_ADDRESSES', "").split(",")
-LOOKUPD_HTTP_ADDRESSES.remove("")
+if "" in LOOKUPD_HTTP_ADDRESSES:
+    LOOKUPD_HTTP_ADDRESSES.remove("")
 
 kwargs = {}
 
@@ -141,9 +143,7 @@ class NSQHandler(object):
             return
 
         # Enhance message object with mget method
-        class EnhancedMessage(dict):
-            get = mget
-        message = EnhancedMessage(message)
+        message = MDict(message)
 
         handlers = []
         for route, handler in self.routes:
