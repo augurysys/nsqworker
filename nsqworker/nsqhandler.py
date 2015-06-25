@@ -2,15 +2,11 @@ import os
 import sys
 import traceback
 import logging
-import json
-import re
 
 from tornado import ioloop
 import nsq
 from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
-
-from mdict import MDict
 
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -67,37 +63,24 @@ class NSQHandler(NSQWriter):
 
         return logger
 
-    def register_route(self, route, handler_func):
-        """ Basic route register
+    def register_route(self, matcher_func, handler_func):
+        """Basic route register
+
+        :type matcher_func: function
+        :type handler_func: function
         """
         # Notice: conflicting routes are intentionally allowed
         # so multiple handler functions can be invoked for a single route
+        self.routes.append((matcher_func, handler_func))
 
-        # TODO - add priority to a route handler, then sort by priority in route_message before executing handlers
-
-        self.routes.append((route, handler_func))
-
-    def route_message(self, message, route_field="name"):
-        """ Basic message router
-
-        The basic functionality assumes that a message is json encoded
-        that the field to route for is "name"
-        and that the route finding method is regex matching
+    def route_message(self, message):
+        """Basic message router
 
         Handlers for the same route will be run sequentially
         """
-        try:
-            message = json.loads(message)
-        except ValueError:
-            self.logger.error("Non-JSON message received.")
-            return
-
-        # Enhance message object with mget method
-        message = MDict(message)
-
         handlers = []
-        for route, handler in self.routes:
-            if re.match(route, message.get(route_field, "")):
+        for route_matcher, handler in self.routes:
+            if route_matcher(message) is True:
                 handlers.append(handler)
 
         if len(handlers) == 0:
@@ -113,14 +96,14 @@ class NSQHandler(NSQWriter):
                     handler.__name__, message, e.message))
 
     def handle_message(self, message):
-        """ Basic message handler
+        """Basic message handler
         """
         self.logger.debug("Received message: {}".format(message.body))
         self.route_message(message.body)
         self.logger.debug("Finished handling message: {}".format(message.body))
 
     def handle_exception(self, message, e):
-        """ Basic error handler
+        """Basic error handler
         """
         error = "message {} raised an exception: {}. Message body: {}".format(message.id, e, message.body)
         self.logger.error(error)

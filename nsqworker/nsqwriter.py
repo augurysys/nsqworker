@@ -43,11 +43,11 @@ class NSQWriter(object):
         return logger
 
     def send_message(self, topic, message):
-        ''' A wrapper around io_loop.add_callback and writer.pub for sending a message
+        """ A wrapper around io_loop.add_callback and writer.pub for sending a message
 
         :type topic: str
         :type message: str
-        '''
+        """
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
@@ -55,11 +55,11 @@ class NSQWriter(object):
         self.io_loop.add_callback(self.writer.pub, topic, message, callback)
 
     def send_messages(self, topic, messages):
-        ''' A wrapper around io_loop.add_callback and writer.mpub for sending multiple messages at once
+        """ A wrapper around io_loop.add_callback and writer.mpub for sending multiple messages at once
 
         :type topic: str
         :type messages: list[str]
-        '''
+        """
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
@@ -67,11 +67,11 @@ class NSQWriter(object):
         self.io_loop.add_callback(self.writer.mpub, topic, messages, callback)
 
     def finish_pub(self, conn, data, topic, payload):
-        '''
+        """
         This method should serve as a callback to the publish/multi-publish method
         It should parse the arguments to decide if the publish was successful or not
         If the publish was not successful, after a pre-defined sleep period, try and resend the message/multi-message
-        '''
+        """
         delay = 1
 
         # Parse conn and data to decide whether message failed or not

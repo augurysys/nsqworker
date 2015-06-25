@@ -115,6 +115,3 @@ if __name__ == "__main__":
 
     # response = requestor.make_request("test", json.dumps(request), wait_for_response=True)
 
-
-# TODO - message encryption
-# TODO - loglevel setting of nsqhandler (to be like ThreadWorker)
