@@ -1,26 +1,7 @@
 from nsqhandler import NSQHandler, load_routes, route
+from basic_matchers import json_matcher, regex_matcher
 import json
 import time
-
-import re
-
-
-def json_matcher(field, value):
-    def match(message):
-        try:
-            message = json.loads(message)
-        except ValueError:
-            return False
-
-        return message.get(field) == value
-
-    return match
-
-def regex_matcher(pattern):
-    def match(message):
-        return re.match(pattern, message) is not None
-
-    return match
 
 
 @load_routes
