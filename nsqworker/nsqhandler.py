@@ -26,6 +26,18 @@ else:
     raise EnvironmentError("Please set NSQD_TCP_ADDRESSES / LOOKUPD_HTTP_ADDRESSES.")
 
 
+def load_routes(cls):
+    funcs = [(member.matcher_func, member) for name, member in cls.__dict__.items() if getattr(member, 'matcher_func', None) is not None]
+    cls.routes += funcs
+    return cls
+
+def route(matcher_func):
+    def wrapper(handler_func):
+        handler_func.matcher_func = matcher_func
+        return handler_func
+    return wrapper
+
+
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
         """
@@ -45,7 +57,7 @@ class NSQHandler(NSQWriter):
             topic=topic, channel=channel, **kwargs
         ).subscribe_worker()
 
-        self.routes = []
+        # self.routes = []
 
     @classmethod
     def get_logger(cls, name=None):
@@ -63,25 +75,15 @@ class NSQHandler(NSQWriter):
 
         return logger
 
-    def register_route(self, matcher_func, handler_func):
-        """Basic route register
-
-        :type matcher_func: function
-        :type handler_func: function
-        """
-        # Notice: conflicting routes are intentionally allowed
-        # so multiple handler functions can be invoked for a single route
-        self.routes.append((matcher_func, handler_func))
-
     def route_message(self, message):
         """Basic message router
 
         Handlers for the same route will be run sequentially
         """
         handlers = []
-        for route_matcher, handler in self.routes:
-            if route_matcher(message) is True:
-                handlers.append(handler)
+        for matcher_func, handler_func in self.__class__.routes:
+            if matcher_func(message) is True:
+                handlers.append(handler_func)
 
         if len(handlers) == 0:
             self.logger.warning("No handlers found for message {}.".format(message))
@@ -90,7 +92,7 @@ class NSQHandler(NSQWriter):
         for handler in handlers:
             self.logger.debug("Routing message to handler {}".format(handler.__name__))
             try:
-                handler(message)
+                handler(self, message)
             except Exception as e:
                 self.logger.error("Handler {} failed handling message {} with error {}".format(
                     handler.__name__, message, e.message))

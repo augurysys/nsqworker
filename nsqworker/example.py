@@ -1,13 +1,9 @@
-from nsqhandler import NSQHandler
+from nsqhandler import NSQHandler, load_routes, route
 import json
 import time
 
 import re
 
-from mdict import MDict
-
-def inject_mget(message):
-    return MDict(message)
 
 def json_matcher(field, value):
     def match(message):
@@ -27,49 +23,50 @@ def regex_matcher(pattern):
     return match
 
 
-class JSONPingPong(NSQHandler):
-    def __init__(self, topic, channel):
-        super(JSONPingPong, self).__init__(topic, channel)
+@load_routes
+class DecoratorJSONPingPong(NSQHandler):
+    routes = []
 
-        self.register_route(json_matcher("name", "request.ping"), self.ping)
-        self.register_route(json_matcher("name", "request.pong"), self.pong)
-
+    @route(json_matcher("name", "ping"))
     def ping(self, message):
         self.logger.info("Ping")
         time.sleep(1)
-        self.send_message("test", json.dumps(dict(name="request.pong")))
+        self.send_message("test", json.dumps(dict(name="pong")))
 
+    @route(json_matcher("name", "pong"))
     def pong(self, message):
         self.logger.info("Pong")
         time.sleep(1)
-        self.send_message("test", json.dumps(dict(name="request.ping")))
+        self.send_message("test", json.dumps(dict(name="ping")))
 
-class TextPingPong(NSQHandler):
-    def __init__(self, topic, channel):
-        super(TextPingPong, self).__init__(topic, channel)
+@load_routes
+class DecoratorTextPingPong(NSQHandler):
+    routes = []
 
-        self.register_route(regex_matcher("^ping$"), self.ping)
-        self.register_route(regex_matcher("^pong$"), self.pong)
-
+    @route(regex_matcher("^ping$"))
     def ping(self, message):
         self.logger.info("Ping")
         time.sleep(1)
-        self.send_message("test", "pong")
+        self.send_message("test2", "pong")
 
+    @route(regex_matcher("^pong$"))
     def pong(self, message):
         self.logger.info("Pong")
         time.sleep(1)
-        self.send_message("test", "ping")
+        self.send_message("test2", "ping")
+
 
 import nsq
 
-# JSONPingPong("test", "pingpong")
-TextPingPong("test", "pingpong")
+DecoratorJSONPingPong("test", "pingpong")
+DecoratorTextPingPong("test2", "pingpong2")
 
 nsq.run()
 
 
-# TODO - Create decorator for register_route to put right above handler functions
+# NOTICE: - Downside: Can't register more one route for the same function (can achieve this with old syntax)
+
 # TODO - Add priorities
 # TODO - loglevel setting of nsqhandler (to be like ThreadWorker)
 # TODO - message encryption
+# TODO - switch env vars to cli arguments
