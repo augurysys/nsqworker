@@ -8,9 +8,11 @@ from nsqhandler import NSQHandler
 
 import time
 
+
 class RequestorHandler(NSQHandler):
     def __init__(self, topic, channel):
         super(RequestorHandler, self).__init__(topic, channel)
+
 
 class NSQRequestor(object):
     """

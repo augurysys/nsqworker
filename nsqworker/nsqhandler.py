@@ -38,6 +38,7 @@ def load_routes(cls):
 
     return cls
 
+
 def route(matcher_func):
     """Decorator for registering a class method along with it's route (matcher based)
     """
@@ -51,10 +52,7 @@ def route(matcher_func):
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
-        """
-        :type writer: nsq.Writer
-
-        This is a wrapper around nsqworker.ThreadWorker
+        """Wrapper around nsqworker.ThreadWorker
         """
         super(NSQHandler, self).__init__()
         self.logger = self.__class__.get_logger()

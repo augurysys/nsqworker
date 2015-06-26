@@ -10,6 +10,7 @@ import time
 # Calling load_routes decorator on it
 # Calling route(matcher_func, handler_func) on every handler
 
+
 @load_routes
 class JSONPingPong(NSQHandler):
     @route(json_matcher("name", "ping"))
@@ -28,6 +29,7 @@ class JSONPingPong(NSQHandler):
 # -- Example 2 --
 # ---------------
 # Notice you can register multiple routes for one handler
+
 
 @load_routes
 class TextPingPong(NSQHandler):
@@ -49,6 +51,7 @@ class TextPingPong(NSQHandler):
 # ---------------
 # It's also possible to register routes using the class method register_route
 # instead of the route decorator, just remember to call super for NSQHandler
+
 
 @load_routes
 class ThirdPingPong(NSQHandler):
