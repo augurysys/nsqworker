@@ -43,6 +43,7 @@ class DecoratorJSONPingPong(NSQHandler):
 class DecoratorTextPingPong(NSQHandler):
     routes = []
 
+    @route(regex_matcher("^plop$"))
     @route(regex_matcher("^ping$"))
     def ping(self, message):
         self.logger.info("Ping")
@@ -63,8 +64,6 @@ DecoratorTextPingPong("test2", "pingpong2")
 
 nsq.run()
 
-
-# NOTICE: - Downside: Can't register more one route for the same function (can achieve this with old syntax)
 
 # TODO - Add priorities
 # TODO - loglevel setting of nsqhandler (to be like ThreadWorker)

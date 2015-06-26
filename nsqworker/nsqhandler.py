@@ -27,13 +27,21 @@ else:
 
 
 def load_routes(cls):
-    funcs = [(member.matcher_func, member) for name, member in cls.__dict__.items() if getattr(member, 'matcher_func', None) is not None]
-    cls.routes += funcs
+    if getattr(cls, 'routes', None) is None:
+        raise AttributeError, "Did you subclass NSQHandler? Please make sure to add an empty routes list to your subclass."
+
+    funcs = [(member.matcher_funcs, member) for name, member in cls.__dict__.items() if getattr(member, 'matcher_funcs', None) is not None]
+    for matchers, handler in funcs:
+        for matcher in matchers:
+            cls.routes.append((matcher, handler))
+
     return cls
 
 def route(matcher_func):
     def wrapper(handler_func):
-        handler_func.matcher_func = matcher_func
+        if getattr(handler_func, 'matcher_funcs', None) is None:
+            handler_func.matcher_funcs = []
+        handler_func.matcher_funcs.insert(0, matcher_func)
         return handler_func
     return wrapper
 
