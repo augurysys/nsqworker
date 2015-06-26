@@ -27,17 +27,20 @@ else:
 
 
 def load_routes(cls):
-    if getattr(cls, 'routes', None) is None:
-        raise AttributeError, "Did you subclass NSQHandler? Please make sure to add an empty routes list to your subclass."
+    """Class decorator for NSQHandler subclasses to load all routes
 
+    :type cls: NSQHandler
+    """
     funcs = [(member.matcher_funcs, member) for name, member in cls.__dict__.items() if getattr(member, 'matcher_funcs', None) is not None]
     for matchers, handler in funcs:
         for matcher in matchers:
-            cls.routes.append((matcher, handler))
+            cls.register_route(matcher, handler)
 
     return cls
 
 def route(matcher_func):
+    """Decorator for registering a class method along with it's route (matcher based)
+    """
     def wrapper(handler_func):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
@@ -82,6 +85,19 @@ class NSQHandler(NSQWriter):
             logger.propagate = 0
 
         return logger
+
+    @classmethod
+    def register_route(cls, matcher_func, handler_func):
+        """Register route
+        """
+        if getattr(cls, "routes", None) is None:
+            cls.routes = []
+
+        # Don't use bound methods - convert to bare function
+        if getattr(handler_func, "im_self", None) is not None:
+            handler_func = handler_func.__func__
+
+        cls.routes.append((matcher_func, handler_func))
 
     def route_message(self, message):
         """Basic message router
