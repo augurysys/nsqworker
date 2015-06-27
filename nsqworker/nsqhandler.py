@@ -108,7 +108,7 @@ class NSQHandler(NSQWriter):
                 handlers.append(handler_func)
 
         if len(handlers) == 0:
-            self.logger.warning("No handlers found for message {}.".format(message))
+            self.logger.debug("No handlers found for message {}.".format(message))
             return
 
         for handler in handlers:

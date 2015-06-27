@@ -79,6 +79,8 @@ ThirdPingPong("test3", "pingpong3")
 nsq.run()
 
 
+# TODO - add some sort of transform function to matchers? Motivation is so json messages 
+#        reaching handler are already json.loads-ed and maybe even imbued with MDict
 # TODO - take get_logger outside of functions, maybe make it into it's own package
 # TODO - Add priorities
 # TODO - loglevel setting of nsqhandler (to be like ThreadWorker)
