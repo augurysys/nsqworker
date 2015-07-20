@@ -70,11 +70,24 @@ class ThirdPingPong(NSQHandler):
         time.sleep(1)
         self.send_message("test3", "ping")
 
+# ------------------#
+# -- Test Handler --#
+# ------------------#
+
+@load_routes
+class Test(NSQHandler):
+    @route(lambda msg: True)
+    def test(self, message):
+        self.logger.info("Test")
+
+# --
+
 import nsq
 
 JSONPingPong("test", "pingpong")
 TextPingPong("test2", "pingpong2")
 ThirdPingPong("test3", "pingpong3")
+Test("test4", "test")
 
 nsq.run()
 

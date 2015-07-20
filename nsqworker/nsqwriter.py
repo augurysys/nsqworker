@@ -17,7 +17,7 @@ class NSQWriter(object):
     def __init__(self):
         self.logger = self.__class__.get_logger()
         self.writer = self.get_writer()
-        self.io_loop = ioloop.IOLoop.instance()
+        self.io_loop = ioloop.IOLoop.current()
 
     def get_writer(self):
         if len(NSQD_TCP_ADDRESSES) == 0:

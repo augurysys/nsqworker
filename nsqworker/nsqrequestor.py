@@ -96,9 +96,7 @@ class NSQRequestor(object):
         if wait_for_response is True:
             self.start_handler()
 
-        self.start_writer()
         self.writer.send_message(topic, message)
-        self.stop_writer()
 
         if wait_for_response is True:
             response = self.wait_for_response(timeout=60)
@@ -111,9 +109,10 @@ if __name__ == "__main__":
     import json
 
     requestor = NSQRequestor()
+    requestor.start_writer()
 
     request = dict(name="request.ping")
-    requestor.make_request("test", json.dumps(request))
+    requestor.make_request("test4", json.dumps(request))
 
-    # response = requestor.make_request("test", json.dumps(request), wait_for_response=True)
-
+    # If you don't call stop_writer, then you can't exit the program
+    requestor.stop_writer()
