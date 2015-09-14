@@ -1,6 +1,10 @@
 nsqworker - an async task worker for NSQ
 ----------------------------------------
 
+This is a fork of [NSQWorker](https://github.com/bsphere/nsqworker).
+It implements a generic message router.
+See [Examples](https://github.com/rikonor/nsqworker/blob/master/nsqworker/example.py).
+
 Currently only a threaded worker is supported.
 it handles [NSQ](http://nsq.io) messaging with the official Python/[Tornado](http://tornadoweb.org) library and executes a blocking message handler function in an executor thread pool.
 
@@ -9,9 +13,26 @@ The motivation behind this package is to replace [Celery](http://celeryproject.o
 
 Installation
 ------------
-`pip install git+https://github.com/bsphere/nsqworker.git`
+`pip install git+https://github.com/rikonor/nsqworker.git`
 
-Usage
+Usage 1
+-----
+```
+import nsq
+from nsqhandler import NSQHandler, load_routes, route
+
+@load_routes
+class Test(NSQHandler):
+    @route(lambda msg: True)
+    def test(self, message):
+        self.logger.info("Test")
+
+Test("test4", "test")
+
+nsq.run()
+```
+
+Usage 2
 -----
 ```
 import nsq
