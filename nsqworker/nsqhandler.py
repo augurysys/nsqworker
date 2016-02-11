@@ -108,7 +108,7 @@ class NSQHandler(NSQWriter):
                 handlers.append(handler_func)
 
         if len(handlers) == 0:
-            self.logger.debug("No handlers found for message {}.".format(message))
+            self.logger.debug("No handlers found for message {}.".format(message.body))
             return
 
         for handler in handlers:
@@ -117,9 +117,9 @@ class NSQHandler(NSQWriter):
                 handler(self, message)
             except Exception as e:
                 msg = "Handler {} failed handling message {} with error {}".format(
-                    handler.__name__, message, e.message)
+                    handler.__name__, message.body, e.message)
                 self.logger.error(msg)
-                self.handle_exception(message, e)
+                self.handle_exception(message.body, e)
 
     def handle_message(self, message):
         """Basic message handler
