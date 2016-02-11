@@ -104,7 +104,7 @@ class NSQHandler(NSQWriter):
         """
         handlers = []
         for matcher_func, handler_func in self.__class__.routes:
-            if matcher_func(message) is True:
+            if matcher_func(message.body) is True:
                 handlers.append(handler_func)
 
         if len(handlers) == 0:
@@ -125,7 +125,7 @@ class NSQHandler(NSQWriter):
         """Basic message handler
         """
         self.logger.debug("Received message: {}".format(message.body))
-        self.route_message(message.body)
+        self.route_message(message)
         self.logger.debug("Finished handling message: {}".format(message.body))
 
     def handle_exception(self, message, e):
