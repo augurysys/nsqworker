@@ -119,7 +119,7 @@ class NSQHandler(NSQWriter):
                 msg = "Handler {} failed handling message {} with error {}".format(
                     handler.__name__, message.body, e.message)
                 self.logger.error(msg)
-                self.handle_exception(message.body, e)
+                self.handle_exception(message, e)
 
     def handle_message(self, message):
         """Basic message handler
@@ -131,6 +131,6 @@ class NSQHandler(NSQWriter):
     def handle_exception(self, message, e):
         """Basic error handler
         """
-        error = "message raised an exception: {}. Message body: {}".format(e, message)
+        error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
