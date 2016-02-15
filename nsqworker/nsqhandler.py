@@ -1,10 +1,11 @@
+import logging
 import os
 import sys
 import traceback
-import logging
 
-from tornado import ioloop
 import nsq
+from tornado import ioloop
+
 from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
 
@@ -31,7 +32,8 @@ def load_routes(cls):
 
     :type cls: NSQHandler
     """
-    funcs = [(member.matcher_funcs, member) for name, member in cls.__dict__.items() if getattr(member, 'matcher_funcs', None) is not None]
+    funcs = [(member.matcher_funcs, member) for name, member in cls.__dict__.items() if
+             getattr(member, 'matcher_funcs', None) is not None]
     for matchers, handler in funcs:
         for matcher in matchers:
             cls.register_route(matcher, handler)
@@ -42,11 +44,13 @@ def load_routes(cls):
 def route(matcher_func):
     """Decorator for registering a class method along with it's route (matcher based)
     """
+
     def wrapper(handler_func):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
         return handler_func
+
     return wrapper
 
 
@@ -101,6 +105,8 @@ class NSQHandler(NSQWriter):
         """Basic message router
 
         Handlers for the same route will be run sequentially
+
+        type message: nsq.Message
         """
         handlers = []
         for matcher_func, handler_func in self.__class__.routes:
@@ -122,14 +128,19 @@ class NSQHandler(NSQWriter):
                 self.handle_exception(message, e)
 
     def handle_message(self, message):
-        """Basic message handler
+        """
+        Basic message handler
+        :type message: nsq.Message
         """
         self.logger.debug("Received message: {}".format(message.body))
         self.route_message(message)
         self.logger.debug("Finished handling message: {}".format(message.body))
 
     def handle_exception(self, message, e):
-        """Basic error handler
+        """
+        Basic error handler
+        :type message: nsq.Message
+        :type e: Exception
         """
         error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)

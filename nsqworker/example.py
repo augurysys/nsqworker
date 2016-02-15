@@ -1,7 +1,11 @@
-from nsqhandler import NSQHandler, load_routes, route
-from basic_matchers import json_matcher, regex_matcher
 import json
 import time
+
+import nsq
+
+from basic_matchers import json_matcher, regex_matcher
+from nsqhandler import NSQHandler, load_routes, route
+
 
 # ---------------
 # -- Example 1 --
@@ -25,6 +29,7 @@ class JSONPingPong(NSQHandler):
         time.sleep(1)
         self.send_message("test", json.dumps(dict(name="ping")))
 
+
 # ---------------
 # -- Example 2 --
 # ---------------
@@ -45,6 +50,7 @@ class TextPingPong(NSQHandler):
         self.logger.info("Pong")
         time.sleep(1)
         self.send_message("test2", "ping")
+
 
 # ---------------
 # -- Example 3 --
@@ -70,19 +76,17 @@ class ThirdPingPong(NSQHandler):
         time.sleep(1)
         self.send_message("test3", "ping")
 
+
 # ------------------#
 # -- Test Handler --#
 # ------------------#
+
 
 @load_routes
 class Test(NSQHandler):
     @route(lambda msg: True)
     def test(self, message):
         self.logger.info("Test")
-
-# --
-
-import nsq
 
 JSONPingPong("test", "pingpong")
 TextPingPong("test2", "pingpong2")

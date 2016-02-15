@@ -2,13 +2,13 @@ import argparse
 import logging
 import sys
 
-from errors import TimeoutError
-
 import nsq
+from concurrent.futures import ThreadPoolExecutor
 from tornado import gen
 from tornado import ioloop
-from concurrent.futures import ThreadPoolExecutor
 from tornado.concurrent import run_on_executor
+
+from errors import TimeoutError
 
 
 class ThreadWorker:
@@ -53,6 +53,9 @@ class ThreadWorker:
 
     @gen.coroutine
     def _message_handler(self, message):
+        """
+        :type message: nsq.Message
+        """
         self.logger.debug("Received message %s", message.id)
         message.enable_async()
 
