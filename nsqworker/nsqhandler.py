@@ -62,6 +62,8 @@ class NSQHandler(NSQWriter):
         super(NSQHandler, self).__init__()
         self.logger = self.__class__.get_logger()
         self.io_loop = ioloop.IOLoop.instance()
+        self.topic = topic
+        self.channel = channel
 
         ThreadWorker(
             message_handler=self.handle_message,
@@ -136,21 +138,20 @@ class NSQHandler(NSQWriter):
 
         event_name = "<undefined>"
         try:
-            jsn = json.loads(message)
+            jsn = json.loads(message.body)
             event_name = jsn['name']
         except Exception:
             pass
 
-        self.logger.info("[START] [{}] event received for topic: [{}] on channel: [{}]".format(
-            event_name, self.topic, self.channel
+        self.logger.info("[START] [{}] [{}] [{}]".format(
+            self.topic, self.channel, event_name
         ))
 
         self.route_message(message)
 
-        self.logger.info("[END] Finished handling [{}] event for topic: [{}] on channel: [{}]".format(
-            event_name, self.topic, self.channel
+        self.logger.info("[END] [{}] [{}] [{}]".format(
+            self.topic, self.channel, event_name
         ))
-
 
     def handle_exception(self, message, e):
         """
