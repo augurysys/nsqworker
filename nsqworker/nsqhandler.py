@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -132,9 +133,24 @@ class NSQHandler(NSQWriter):
         Basic message handler
         :type message: nsq.Message
         """
-        self.logger.debug("Received message: {}".format(message.body))
+
+        event_name = "<undefined>"
+        try:
+            jsn = json.loads(message)
+            event_name = jsn['name']
+        except Exception:
+            pass
+
+        self.logger.info("[START] [{}] event received for topic: [{}] on channel: [{}]".format(
+            event_name, self.topic, self.channel
+        ))
+
         self.route_message(message)
-        self.logger.debug("Finished handling message: {}".format(message.body))
+
+        self.logger.info("[END] Finished handling [{}] event for topic: [{}] on channel: [{}]".format(
+            event_name, self.topic, self.channel
+        ))
+
 
     def handle_exception(self, message, e):
         """
