@@ -111,19 +111,38 @@ class NSQHandler(NSQWriter):
 
         type message: nsq.Message
         """
+        m_body = message.body
         handlers = []
+
         for matcher_func, handler_func in self.__class__.routes:
-            if matcher_func(message.body) is True:
+            if matcher_func(m_body) is True:
                 handlers.append(handler_func)
 
         if len(handlers) == 0:
             self.logger.debug("No handlers found for message {}.".format(message.body))
             return
 
+        event_name = "<undefined>"
+        try:
+            jsn = json.loads(m_body)
+            event_name = jsn['name']
+        except Exception:
+            pass
+
         for handler in handlers:
             self.logger.debug("Routing message to handler {}".format(handler.__name__))
             try:
+
+                self.logger.info("[START] [{}] [{}] [{}]".format(
+                    self.topic, self.channel, event_name
+                ))
+
                 handler(self, message)
+
+                self.logger.info("[END] [{}] [{}] [{}]".format(
+                    self.topic, self.channel, event_name
+                ))
+
             except Exception as e:
                 msg = "Handler {} failed handling message {} with error {}".format(
                     handler.__name__, message.body, e.message)
@@ -136,22 +155,9 @@ class NSQHandler(NSQWriter):
         :type message: nsq.Message
         """
 
-        event_name = "<undefined>"
-        try:
-            jsn = json.loads(message.body)
-            event_name = jsn['name']
-        except Exception:
-            pass
-
-        self.logger.info("[START] [{}] [{}] [{}]".format(
-            self.topic, self.channel, event_name
-        ))
-
+        self.logger.debug("Received message: {}".format(message.body))
         self.route_message(message)
-
-        self.logger.info("[END] [{}] [{}] [{}]".format(
-            self.topic, self.channel, event_name
-        ))
+        self.logger.debug("Finished handling message: {}".format(message.body))
 
     def handle_exception(self, message, e):
         """
