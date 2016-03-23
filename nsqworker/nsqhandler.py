@@ -1,8 +1,10 @@
 import json
 import logging
 import os
+import random
 import sys
 import traceback
+from string import ascii_uppercase
 
 import nsq
 from tornado import ioloop
@@ -54,6 +56,10 @@ def route(matcher_func):
 
     return wrapper
 
+
+def gen_random_string(n=10):
+
+    return ''.join(random.choice(ascii_uppercase+'1234567890') for _ in range(n))
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
@@ -129,25 +135,37 @@ class NSQHandler(NSQWriter):
         except Exception:
             pass
 
+        handler_id = gen_random_string()
+
+        self.logger.info("[START] [{}] [{}] [{}] [{}]".format(
+            handler_id, self.topic, self.channel, event_name
+        ))
+
         for handler in handlers:
-            self.logger.debug("Routing message to handler {}".format(handler.__name__))
+
+            route_id = gen_random_string()
+
+            self.logger.info("[{}] Routing message to handler {}".format(
+                route_id, handler.__name__)
+            )
+
             try:
 
-                self.logger.info("[START] [{}] [{}] [{}]".format(
-                    self.topic, self.channel, event_name
-                ))
-
                 handler(self, message)
-
-                self.logger.info("[END] [{}] [{}] [{}]".format(
-                    self.topic, self.channel, event_name
-                ))
 
             except Exception as e:
                 msg = "Handler {} failed handling message {} with error {}".format(
                     handler.__name__, message.body, e.message)
                 self.logger.error(msg)
                 self.handle_exception(message, e)
+
+            self.logger.info("[{}] Done handling {}".format(
+                route_id, handler.__name__)
+            )
+
+        self.logger.info("[END] [{}] [{}] [{}] [{}]".format(
+            handler_id, self.topic, self.channel, event_name
+        ))
 
     def handle_message(self, message):
         """
