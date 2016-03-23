@@ -4,7 +4,7 @@ import os
 import random
 import sys
 import traceback
-from string import ascii_uppercase
+from string import hexdigits
 
 import nsq
 from tornado import ioloop
@@ -59,7 +59,7 @@ def route(matcher_func):
 
 def gen_random_string(n=10):
 
-    return ''.join(random.choice(ascii_uppercase+'1234567890') for _ in range(n))
+    return ''.join(random.choice(hexdigits) for _ in range(n))
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1):
