@@ -50,7 +50,7 @@ class MessagePersistor(object):
 
     def is_route_message(self, message, channel, route):
 
-        if not self.is_presisted_message(message):
+        if not self.is_persisted_message(message):
             return True
 
         return self._is_route_persisted(message, channel, route)
