@@ -134,6 +134,7 @@ class NSQHandler(NSQWriter):
             return
 
         event_name = "<undefined>"
+        jsn = None
         try:
             jsn = json.loads(m_body)
             event_name = jsn['name']
@@ -147,20 +148,17 @@ class NSQHandler(NSQWriter):
         ))
 
         for handler in handlers:
+            route_id = gen_random_string()
 
-            if self._persistor.is_persisted_message(m_body):
-                self.logger.info("Handling persisted message")
+            if jsn is not None and self._persistor.is_persisted_message(jsn):
+                if self._persistor.is_route_message(jsn, self.channel, handler.__name__):
 
-                if self._persistor.is_route_message(m_body, self.channel, handler.__name__):
-
-                    self.logger.info("Route {} in channel {} will handle persisted message".format(
-                        handler.__name__, self.channel
+                    self.logger.info("[{}] Route {} in channel {} will handle persisted message".format(
+                        route_id, handler.__name__, self.channel
                     ))
 
                 else:
                     continue
-
-            route_id = gen_random_string()
 
             self.logger.info("[{}] Routing message to handler {}".format(
                 route_id, handler.__name__)
@@ -171,14 +169,15 @@ class NSQHandler(NSQWriter):
                 handler(self, message)
 
             except Exception as e:
-                msg = "Handler {} failed handling message {} with error {}".format(
-                    handler.__name__, message.body, e.message)
+                msg = "[{}] Handler {} failed handling message {} with error {}".format(
+                    route_id, handler.__name__, message.body, e.message)
                 self.logger.error(msg)
                 self.handle_exception(message, e)
 
                 _id = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body)
                 if _id is not None:
-                    self.logger.info("Persisted failed message handling with ID {}".format(_id))
+                    self.logger.info("[{}] Persisted failed message handling with ID {}".format(route_id,
+                                                                                                _id))
 
             self.logger.info("[{}] Done handling {}".format(
                 route_id, handler.__name__)
