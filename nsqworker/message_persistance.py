@@ -32,7 +32,7 @@ class MessagePersistor(object):
             "topic": topic,
             "channel": channel,
             "route": route,
-            "message": json.dumps(message, sort_keys=True),
+            "message": message,
             "persist_time": datetime.now()
         }
 
