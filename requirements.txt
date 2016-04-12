@@ -2,3 +2,4 @@ tornado
 pynsq
 futures
 mdict
+redis

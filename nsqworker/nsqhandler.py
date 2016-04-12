@@ -14,7 +14,7 @@ from nsqwriter import NSQWriter
 
 from message_persistance import MessagePersistor
 
-# Fetch NSQD addres
+# Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
     NSQD_TCP_ADDRESSES.remove("")
@@ -63,9 +63,9 @@ def gen_random_string(n=10):
 
     return ''.join(random.choice(hexdigits) for _ in range(n))
 
+
 class NSQHandler(NSQWriter):
-    def __init__(self, topic, channel, timeout=None, concurrency=1,
-                 persistor=MessagePersistor()):
+    def __init__(self, topic, channel, timeout=None, concurrency=1):
         """Wrapper around nsqworker.ThreadWorker
         """
         super(NSQHandler, self).__init__()
@@ -74,7 +74,7 @@ class NSQHandler(NSQWriter):
         self.topic = topic
         self.channel = channel
 
-        self._persistor = persistor
+        self._persistor = MessagePersistor(self.logger)
 
         ThreadWorker(
             message_handler=self.handle_message,
@@ -174,10 +174,11 @@ class NSQHandler(NSQWriter):
                 self.logger.error(msg)
                 self.handle_exception(message, e)
 
-                _id = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body)
-                if _id is not None:
-                    self.logger.info("[{}] Persisted failed message handling with ID {}".format(route_id,
-                                                                                                _id))
+                new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body)
+                if new:
+                    self.logger.info("[{}] Persisted failed message".format(route_id))
+                else:
+                    self.logger.info("[{}] Updated existing failed message".format(route_id))
 
             self.logger.info("[{}] Done handling {}".format(
                 route_id, handler.__name__)
