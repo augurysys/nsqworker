@@ -53,11 +53,11 @@ class MessagePersistor(object):
 
     def is_persisted_message(self, message):
 
-        return True if 'persisted' in message else False
+        return True if 'recipients' in message else False
 
     def _is_route_persisted(self, message, channel, route):
 
-        return True if route in message['persisted'].get(channel, []) else False
+        return True if route in message['recipients'].get(channel, []) else False
 
     def is_route_message(self, message, channel, route):
 
