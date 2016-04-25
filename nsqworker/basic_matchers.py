@@ -1,6 +1,25 @@
 import json
 import re
 
+import mdict
+
+
+def predicate_field_matcher(field, missing_value=False, inverse=False):
+
+    def match(message):
+
+        try:
+            msg = json.loads(message)
+        except ValueError:
+            return False
+
+        md = mdict.MDict(msg)
+        val = bool(md.get(field, default=missing_value))
+
+        return val if not inverse else not val
+
+    return match
+
 
 def json_matcher(field, value):
     """Basic JSON matcher
