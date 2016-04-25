@@ -46,3 +46,15 @@ def regex_matcher(pattern):
         return re.match(pattern, message) is not None
 
     return match
+
+
+def multi_matcher(matcher_funcs):
+
+    def match(message):
+        for mf in matcher_funcs:
+            if not mf(message):
+                return False
+
+        return True
+
+    return match
