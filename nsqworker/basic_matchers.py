@@ -48,7 +48,7 @@ def regex_matcher(pattern):
     return match
 
 
-def multi_matcher(matcher_funcs):
+def multi_matcher(*matcher_funcs):
 
     def match(message):
         for mf in matcher_funcs:
