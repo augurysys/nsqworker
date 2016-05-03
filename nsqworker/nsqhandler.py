@@ -174,11 +174,12 @@ class NSQHandler(NSQWriter):
                 self.logger.error(msg)
                 self.handle_exception(message, e)
 
-                new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body)
-                if new:
-                    self.logger.info("[{}] Persisted failed message".format(route_id))
-                else:
-                    self.logger.info("[{}] Updated existing failed message".format(route_id))
+                if self._persistor.enabled:
+                    new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body)
+                    if new:
+                        self.logger.info("[{}] Persisted failed message".format(route_id))
+                    else:
+                        self.logger.info("[{}] Updated existing failed message".format(route_id))
 
             self.logger.info("[{}] Done handling {}".format(
                 route_id, handler.__name__)

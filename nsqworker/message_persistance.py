@@ -14,9 +14,10 @@ class MessagePersistor(object):
 
         self._logger = logger
         self._init_redis()
+        self._enabled = True
 
         if not self._redis:
-
+            self._enabled = False
             self._logger.info("Redis client unavailable, failed message persistence disabled")
 
     def _init_redis(self):
@@ -34,7 +35,7 @@ class MessagePersistor(object):
     def persist_message(self, topic, channel, route, message):
 
         if not self._redis:
-            return
+            return None
 
         persist_time = datetime.now()
 
@@ -65,6 +66,11 @@ class MessagePersistor(object):
             return True
 
         return self._is_route_persisted(message, channel, route)
+
+    @property
+    def enabled(self):
+
+        return self._enabled
 
 
 
