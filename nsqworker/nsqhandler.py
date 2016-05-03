@@ -63,9 +63,12 @@ def gen_random_string(n=10):
 
     return ''.join(random.choice(hexdigits) for _ in range(n))
 
+_identity = lambda x: x
 
 class NSQHandler(NSQWriter):
-    def __init__(self, topic, channel, timeout=None, concurrency=1):
+    def __init__(self, topic, channel, timeout=None, concurrency=1,
+                 message_preprocessor=None):
+
         """Wrapper around nsqworker.ThreadWorker
         """
         super(NSQHandler, self).__init__()
@@ -73,6 +76,8 @@ class NSQHandler(NSQWriter):
         self.io_loop = ioloop.IOLoop.instance()
         self.topic = topic
         self.channel = channel
+
+        self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
         self._persistor = MessagePersistor(self.logger)
 
@@ -166,7 +171,7 @@ class NSQHandler(NSQWriter):
 
             try:
 
-                handler(self, message)
+                handler(self, self._message_preprocessor(message))
 
             except Exception as e:
                 msg = "[{}] Handler {} failed handling message {} with error {}".format(
