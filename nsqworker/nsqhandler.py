@@ -55,14 +55,14 @@ def route(matcher_func, lock_dict=None):
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
         if lock_dict is None:
-            def flock(message):
+            def flock(self, message):
                 print "No lock is needed!"
-                handler_func(message)
+                handler_func(self, message)
             return flock
         else:
-            def flock(message):
+            def flock(self, message):
                 print "Lock is needed!"
-                handler_func(message)
+                handler_func(self, message)
             return flock
 
     return wrapper
