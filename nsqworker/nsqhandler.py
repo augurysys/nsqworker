@@ -46,7 +46,7 @@ def load_routes(cls):
     return cls
 
 
-def route(matcher_func):
+def route(matcher_func, lock_dict=None):
     """Decorator for registering a class method along with it's route (matcher based)
     """
 
@@ -54,7 +54,12 @@ def route(matcher_func):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
-        return handler_func
+        if lock_dict is None:
+            print "No lock is needed!"
+            return handler_func
+        else:
+            print "Lock is needed!"
+            return handler_func
 
     return wrapper
 
