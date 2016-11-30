@@ -54,17 +54,23 @@ def route(matcher_func, lock_dict=None):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
+
+
         if lock_dict is None:
-            def flock():
-                logging.warning("No lock is needed!")
-                print "No lock is needed!"
-                handler_func()
-            return flock
+            return handler_func
         else:
-            def flock():
+            def flock(self, message):
                 logging.warning("No lock needed!")
-                print "Lock is needed!"
-                handler_func()
+                print "Locking"
+                try:
+                    handler_func(self, message)
+                except Exception as e:
+                    print "got exception, unlocking"
+                    raise e
+                    return
+
+                print "Un-Locking"
+            flock.matcher_funcs = handler_func.matcher_funcs
             return flock
 
     return wrapper
