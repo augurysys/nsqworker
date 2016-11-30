@@ -54,8 +54,6 @@ def route(matcher_func, lock_dict=None):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
-
-
         if lock_dict is None:
             return handler_func
         else:
@@ -93,6 +91,7 @@ class NSQHandler(NSQWriter):
         self.io_loop = ioloop.IOLoop.instance()
         self.topic = topic
         self.channel = channel
+        self.locker = locker
 
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
