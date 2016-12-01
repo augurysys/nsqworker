@@ -72,7 +72,7 @@ class RedisLock:
 
 class LockOptions:
     """
-    Lock Object, should be used by locking mechanism clients for defining the lock object
+    Lock Object, should be used by locking mechanism clients for defining the lock properties
     """
 
     def __init__(self, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
@@ -86,3 +86,18 @@ class LockOptions:
         self.ttl = ttl
         self.timeout = timeout
         self.retries = retries
+
+
+class NsqLockOptions(LockOptions):
+    """
+    Nsq Lock Object, should be used by nsq consumers
+    """
+    def __init__(self, is_mandatory, path_to_id, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
+        """
+        Create a new NSQ lock object
+        ``path_to_id`` path to resource id on nsq event data
+        ``is_mandatory`` is the lock mandatory for event handling (behaviour hint for lock allocation fails )
+        """
+        LockOptions.__init__(self, ttl, timeout, retries)
+        self.is_mandatory = is_mandatory
+        self.path_to_id = path_to_id
