@@ -33,7 +33,8 @@ class RedisLock:
     """
 
     def __init__(self, key, lock_options, service_name, redis, logger):
-        self.__lock_obj = redis.lock(name=self.get_key(service_name, key), timeout=lock_options.ttl, blocking_timeout=lock_options.timeout,
+        self.__lock_obj = redis.lock(name=self.get_key(service_name, key), timeout=lock_options.ttl,
+                                     blocking_timeout=lock_options.timeout,
                                      sleep=LOCKED_RETRY_DURATION)
         self.__retries = lock_options.retries
         self.logger = logger
@@ -55,8 +56,8 @@ class RedisLock:
                 if retries_index != self.__lock_obj.retries - 1:
                     time.sleep(ERR_RETRY_DURATION)
                 continue
-        self.logger.error('Cannot lock resource with key: {}. Redis error message: {}'.
-                          format(self.__lock_obj.name, err))
+        self.logger.warning('Failed {} times acquiring lock on resource with key: {}. Redis error message: {}'.
+                            format(self.__retries, self.__lock_obj.name, err))
         raise err
 
     def unlock(self):
@@ -71,7 +72,7 @@ class RedisLock:
         try:
             self.__lock_obj.release()
         except redis_client.RedisError as re:
-            self.logger.info("Unlock Failed with redis error: {}".format(re))
+            self.logger.warning("Unlock Failed with redis error: {}".format(re))
             raise re
 
     @staticmethod
@@ -102,7 +103,9 @@ class NsqLockOptions(LockOptions):
     """
     Nsq Lock Object, should be used by nsq consumers
     """
-    def __init__(self, path_to_id, is_mandatory=True, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
+
+    def __init__(self, path_to_id, is_mandatory=False, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT,
+                 retries=DEFAULT_RETRIES):
         """
         Create a new NSQ lock object
         ``path_to_id`` path to resource id on nsq event data
