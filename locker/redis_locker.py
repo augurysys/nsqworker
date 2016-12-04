@@ -92,7 +92,7 @@ class NsqLockOptions(LockOptions):
     """
     Nsq Lock Object, should be used by nsq consumers
     """
-    def __init__(self, is_mandatory, path_to_id, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
+    def __init__(self, path_to_id, is_mandatory=True, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT, retries=DEFAULT_RETRIES):
         """
         Create a new NSQ lock object
         ``path_to_id`` path to resource id on nsq event data
