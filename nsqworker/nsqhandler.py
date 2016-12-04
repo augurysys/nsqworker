@@ -11,6 +11,9 @@ from tornado import ioloop
 
 from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
+import locker.redis_locker as _locker
+from redis import exceptions as redis_errors
+from mdict import MDict
 
 from message_persistance import MessagePersistor
 
@@ -46,7 +49,7 @@ def load_routes(cls):
     return cls
 
 
-def route(matcher_func, lock_dict=None):
+def route(matcher_func, nsq_lock_options=None):
     """Decorator for registering a class method along with it's route (matcher based)
     """
 
@@ -54,20 +57,41 @@ def route(matcher_func, lock_dict=None):
         if getattr(handler_func, 'matcher_funcs', None) is None:
             handler_func.matcher_funcs = []
         handler_func.matcher_funcs.insert(0, matcher_func)
-        if lock_dict is None:
+        # lock is not needed
+        if nsq_lock_options is None:
             return handler_func
-        else:
-            def flock(self, message):
-                logging.warning("No lock needed!")
-                print "Locking"
+
+        # lock is needed
+        def flock(self, message):
+            logging.warning("No lock needed!")
+            # Todo: move static extract method from AUGURYHandler to NSQHandler?
+            message = MDict(json.loads(message))
+            resource_id = message[nsq_lock_options.path_to_id]
+            event_name = message["name"]
+            key = "{}:{}".format(event_name, resource_id)
+            lock_object = self.locker.get_lock_object(key, nsq_lock_options)
+            # locking
+
+            try:
+                is_locked = lock_object.lock()
+            except redis_errors.RedisError as re:
+                if nsq_lock_options.is_mandatory:
+                    raise re
+                handler_func(self, message)
+                return
+            if is_locked:
                 try:
                     handler_func(self, message)
-                except Exception as e:
-                    print "got exception, unlocking"
-                    raise e
+                finally:
+                    lock_object.unlock()
+            else:
+                logging.warning("acquiring lock timed out - resource is locked!")
+                if nsq_lock_options.is_mandatory is False:
+                    handler_func(self, message)
                     return
+                logging.warning("lock is mandatory, aborting handler")
+                raise redis_errors.LockError("mandatory lock not acquired, aborting handler")
 
-                print "Un-Locking"
             flock.matcher_funcs = handler_func.matcher_funcs
             return flock
 
@@ -75,10 +99,11 @@ def route(matcher_func, lock_dict=None):
 
 
 def gen_random_string(n=10):
-
     return ''.join(random.choice(hexdigits) for _ in range(n))
 
+
 _identity = lambda x: x
+
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1,
@@ -91,7 +116,7 @@ class NSQHandler(NSQWriter):
         self.io_loop = ioloop.IOLoop.instance()
         self.topic = topic
         self.channel = channel
-        self.locker = locker
+        self.locker = _locker.RedisLocker("eventhandler")
 
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
@@ -229,4 +254,3 @@ class NSQHandler(NSQWriter):
         error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
-
