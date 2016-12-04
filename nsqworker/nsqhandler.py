@@ -5,6 +5,7 @@ import random
 import sys
 import traceback
 from string import hexdigits
+from functools import wraps
 
 import nsq
 from tornado import ioloop
@@ -13,7 +14,6 @@ from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
-from mdict import MDict
 
 from message_persistance import MessagePersistor
 
@@ -40,11 +40,11 @@ def load_routes(cls):
 
     :type cls: NSQHandler
     """
-    funcs = [(member.matcher_funcs, member) for name, member in cls.__dict__.items() if
-             getattr(member, 'matcher_funcs', None) is not None]
-    for matchers, handler in funcs:
-        for matcher in matchers:
-            cls.register_route(matcher, handler)
+    funcs = [(member.options, member) for name, member in cls.__dict__.items() if
+             getattr(member, 'options', None) is not None]
+    for options, handler in funcs:
+        for matcher, lock_options in options:
+            cls.register_route(matcher, handler, lock_options)
 
     return cls
 
@@ -54,46 +54,12 @@ def route(matcher_func, nsq_lock_options=None):
     """
 
     def wrapper(handler_func):
-        if getattr(handler_func, 'matcher_funcs', None) is None:
-            handler_func.matcher_funcs = []
-        handler_func.matcher_funcs.insert(0, matcher_func)
+        if getattr(handler_func, 'options', None) is None:
+            handler_func.options = []
+        handler_func.options.insert(0, (matcher_func, nsq_lock_options))
         # lock is not needed
-        if nsq_lock_options is None:
-            return handler_func
-
-        # lock is needed
-        def flock(self, message):
-            logging.warning("No lock needed!")
-            # Todo: move static extract method from AUGURYHandler to NSQHandler?
-            message = MDict(json.loads(message))
-            resource_id = message[nsq_lock_options.path_to_id]
-            event_name = message["name"]
-            key = "{}:{}".format(event_name, resource_id)
-            lock_object = self.locker.get_lock_object(key, nsq_lock_options)
-            # locking
-
-            try:
-                is_locked = lock_object.lock()
-            except redis_errors.RedisError as re:
-                if nsq_lock_options.is_mandatory:
-                    raise re
-                handler_func(self, message)
-                return
-            if is_locked:
-                try:
-                    handler_func(self, message)
-                finally:
-                    lock_object.unlock()
-            else:
-                logging.warning("acquiring lock timed out - resource is locked!")
-                if nsq_lock_options.is_mandatory is False:
-                    handler_func(self, message)
-                    return
-                logging.warning("lock is mandatory, aborting handler")
-                raise redis_errors.LockError("mandatory lock not acquired, aborting handler")
-
-            flock.matcher_funcs = handler_func.matcher_funcs
-            return flock
+        # if nsq_lock_options is None:
+        return handler_func
 
     return wrapper
 
@@ -103,6 +69,38 @@ def gen_random_string(n=10):
 
 
 _identity = lambda x: x
+
+
+def with_lock(handler_func, nsq_lock_options):
+    @wraps(handler_func)
+    def flock(self, message):
+        event = self.extract(message.body)
+        event_name = event.get("name")
+        resource_id = event.get(nsq_lock_options.path_to_id)
+        key = "{}:{}".format(event_name, resource_id)
+        lock_object = self.locker.get_lock_object(key, nsq_lock_options)
+
+        # locking
+        try:
+            is_locked = lock_object.lock()
+        except redis_errors.RedisError as re:
+            if nsq_lock_options.is_mandatory:
+                raise re
+            return handler_func(self, message)
+        if is_locked:
+            try:
+                return handler_func(self, message)
+            finally:
+                lock_object.unlock()
+
+        logging.warning("acquiring lock timed out - resource is locked by another process")
+        if nsq_lock_options.is_mandatory is False:
+            return handler_func(self, message)
+
+        logging.warning("lock is mandatory, aborting handler")
+        raise redis_errors.LockError("mandatory lock not acquired, aborting handler")
+
+    return flock
 
 
 class NSQHandler(NSQWriter):
@@ -116,7 +114,7 @@ class NSQHandler(NSQWriter):
         self.io_loop = ioloop.IOLoop.instance()
         self.topic = topic
         self.channel = channel
-        self.locker = _locker.RedisLocker("eventhandler")
+        self.locker = _locker.RedisLocker("eventhandler", self.logger)
 
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
@@ -149,7 +147,7 @@ class NSQHandler(NSQWriter):
         return logger
 
     @classmethod
-    def register_route(cls, matcher_func, handler_func):
+    def register_route(cls, matcher_func, handler_func, lock_options):
         """Register route
         """
         if getattr(cls, "routes", None) is None:
@@ -159,7 +157,7 @@ class NSQHandler(NSQWriter):
         if getattr(handler_func, "im_self", None) is not None:
             handler_func = handler_func.__func__
 
-        cls.routes.append((matcher_func, handler_func))
+        cls.routes.append((matcher_func, handler_func, lock_options))
 
     def route_message(self, message):
         """Basic message router
@@ -171,8 +169,11 @@ class NSQHandler(NSQWriter):
         m_body = message.body
         handlers = []
 
-        for matcher_func, handler_func in self.__class__.routes:
+        for matcher_func, handler_func, lock_options in self.__class__.routes:
+
             if matcher_func(m_body) is True:
+                if lock_options is not None:
+                    handler_func = with_lock(handler_func, lock_options)
                 handlers.append(handler_func)
 
         if len(handlers) == 0:

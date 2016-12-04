@@ -12,17 +12,18 @@ if not all([REDIS_HOST, REDIS_PORT]):
 DEFAULT_TTL = 10
 DEFAULT_TIMEOUT = 10
 DEFAULT_RETRIES = 3
-LOCKED_RETRY_DURATION = 20
-ERR_RETRY_DURATION = 50
+LOCKED_RETRY_DURATION = 0.02
+ERR_RETRY_DURATION = 0.05
 
 
 class RedisLocker:
-    def __init__(self, service_name):
+    def __init__(self, service_name, logger):
         self.redis = redis_client.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0, password=REDIS_PASSWORD)
         self.service_name = service_name
+        self.logger = logger
 
     def get_lock_object(self, key, lock_options):
-        return RedisLock(key, lock_options, self.service_name, self.redis)
+        return RedisLock(key, lock_options, self.service_name, self.redis, self.logger)
 
 
 class RedisLock:
@@ -31,10 +32,11 @@ class RedisLock:
     and hold it. There are 2 main methods: lock, unlock
     """
 
-    def __init__(self, key, lock_options, service_name, redis):
+    def __init__(self, key, lock_options, service_name, redis, logger):
         self.__lock_obj = redis.lock(name=self.get_key(service_name, key), timeout=lock_options.ttl, blocking_timeout=lock_options.timeout,
                                      sleep=LOCKED_RETRY_DURATION)
         self.__retries = lock_options.retries
+        self.logger = logger
 
     def lock(self):
         """
@@ -43,15 +45,18 @@ class RedisLock:
         :return: True if the resource is locked, False o.w
         :raise: ``RedisError`` in case of redis returned error while trying to lock and all retries were used
         """
+        self.logger.info('Locking key {}'.format(self.__lock_obj.name))
         err = None
-        for i in xrange(0, self.__retries):
+        for retries_index in xrange(0, self.__retries):
             try:
                 return self.__lock_obj.acquire()
             except redis_client.RedisError as re:
                 err = re
-                if i != self.__lock_obj.retries - 1:
+                if retries_index != self.__lock_obj.retries - 1:
                     time.sleep(ERR_RETRY_DURATION)
                 continue
+        self.logger.error('Cannot lock resource with key: {}. Redis error message: {}'.
+                          format(self.__lock_obj.name, err))
         raise err
 
     def unlock(self):
@@ -62,7 +67,12 @@ class RedisLock:
         ``LockError(RedisError)`` if the lock does not exist or if the lock is owned by a different owner (the lock
         token is different).
         """
-        self.__lock_obj.release()
+        self.logger.info('Unlocking key {}'.format(self.__lock_obj.name))
+        try:
+            self.__lock_obj.release()
+        except redis_client.RedisError as re:
+            self.logger.info("Unlock Failed with redis error: {}".format(re))
+            raise re
 
     @staticmethod
     def get_key(service_name, resource):
