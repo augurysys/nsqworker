@@ -80,7 +80,7 @@ def with_lock(handler_func, nsq_lock_options):
         if resource_id is None:
             self.logger.warning("Cannot find lock resource id on event data path:{}".format(nsq_lock_options.path_to_id))
             if nsq_lock_options.is_mandatory:
-                raise Exception("Mandatory lock acquiring aborted due to lack of resource id")
+                raise Exception("Mandatory lock acquiring aborted due to lack of resource id on event data")
             else:
                 return handler_func(self, message)
 
@@ -101,12 +101,14 @@ def with_lock(handler_func, nsq_lock_options):
             finally:
                 lock_object.unlock()
 
-        self.logger.warning("acquiring lock timed out - resource {} is locked by another process".format(key))
-        if nsq_lock_options.is_mandatory is False:
-            return handler_func(self, message)
+        # lock not acquired, resource is locked
+        self.logger.warning("Acquiring lock timed out - resource {} is locked by another process".format(key))
+        if nsq_lock_options.is_mandatory:
+            self.logger.error("Lock is mandatory, aborting handler")
+            raise redis_errors.LockError("Mandatory lock not acquired, aborting handler")
 
-        self.logger.warning("lock is mandatory, aborting handler")
-        raise redis_errors.LockError("Mandatory lock not acquired, aborting handler")
+        # lock is not mandatory run handler without lock
+        return handler_func(self, message)
 
     return flock
 
