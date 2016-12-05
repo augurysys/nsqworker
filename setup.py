@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='nsqworker',
-    packages=['nsqworker'],
+    packages=['nsqworker', 'locker'],
     version='0.0.1',
     install_requires=['tornado', 'pynsq', 'futures', 'mdict', 'redis'],
 )

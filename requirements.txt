@@ -3,4 +3,3 @@ pynsq
 futures
 mdict
 redis
-locker
