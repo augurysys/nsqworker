@@ -44,7 +44,8 @@ def load_routes(cls):
              getattr(member, 'options', None) is not None]
     for options, handler in funcs:
         for matcher, lock_options in options:
-            cls.register_route(matcher, handler, lock_options)
+            cls.register_route(matcher, handler) if lock_options is None else cls.register_route(
+                matcher, with_lock(handler, lock_options))
 
     return cls
 
@@ -78,7 +79,8 @@ def with_lock(handler_func, nsq_lock_options):
         event_name = event.get("name")
         resource_id = event.get(nsq_lock_options.path_to_id)
         if resource_id is None:
-            self.logger.warning("Cannot find lock resource id on event data path:{}".format(nsq_lock_options.path_to_id))
+            self.logger.warning(
+                "Cannot find lock resource id on event data path:{}".format(nsq_lock_options.path_to_id))
             if nsq_lock_options.is_mandatory:
                 raise ValueError("Mandatory lock acquiring aborted due to lack of resource id on event data")
             else:
@@ -157,7 +159,7 @@ class NSQHandler(NSQWriter):
         return logger
 
     @classmethod
-    def register_route(cls, matcher_func, handler_func, lock_options):
+    def register_route(cls, matcher_func, handler_func):
         """Register route
         """
         if getattr(cls, "routes", None) is None:
@@ -167,7 +169,7 @@ class NSQHandler(NSQWriter):
         if getattr(handler_func, "im_self", None) is not None:
             handler_func = handler_func.__func__
 
-        cls.routes.append((matcher_func, handler_func, lock_options))
+        cls.routes.append((matcher_func, handler_func))
 
     def route_message(self, message):
         """Basic message router
@@ -179,11 +181,9 @@ class NSQHandler(NSQWriter):
         m_body = message.body
         handlers = []
 
-        for matcher_func, handler_func, lock_options in self.__class__.routes:
+        for matcher_func, handler_func in self.__class__.routes:
 
             if matcher_func(m_body) is True:
-                if lock_options is not None:
-                    handler_func = with_lock(handler_func, lock_options)
                 handlers.append(handler_func)
 
         if len(handlers) == 0:
