@@ -21,6 +21,7 @@ ERR_RETRY_DURATION = 0.05
 class LockerError(Exception):
     pass
 
+current_milli_time = lambda: int(round(time.time() * 1000))
 
 class RedisLocker:
     def __init__(self, service_name, logger=None):
@@ -54,11 +55,14 @@ class RedisLock:
         :return: True if the resource is locked, False o.w
         :raise: ``RedisError`` in case of redis returned error while trying to lock and all retries were used
         """
-        self.logger.info('Locking key {}'.format(self.__lock_obj.name))
+        start_time = current_milli_time()
         err = None
         for retries_index in xrange(0, self.__retries):
             try:
-                return self.__lock_obj.acquire()
+                is_locked = self.__lock_obj.acquire()
+                self.logger.info('[LOCK_TIME] [lock_key={}] [lock_status=ACQUIRED] [time={} Millisec]'.format(
+                    self.__lock_obj.name, str(current_milli_time() - start_time)))
+                return is_locked
             except redis_client.RedisError as re:
                 err = re
                 if retries_index != self.__lock_obj.retries - 1:
@@ -75,12 +79,14 @@ class RedisLock:
         ``LockError(RedisError)`` if the lock does not exist or if the lock is owned by a different owner (the lock
         token is different).
         """
-        self.logger.info('Unlocking key {}'.format(self.__lock_obj.name))
+        start_time = current_milli_time()
         try:
             self.__lock_obj.release()
         except redis_client.RedisError as re:
             self.logger.warning("Unlock Failed with redis error: {}".format(re))
             raise re
+        self.logger.info('[UNLOCK_TIME] [lock_key={}] [time={} Millisec]'.format(
+            self.__lock_obj.name, str(current_milli_time() - start_time)))
 
     @staticmethod
     def get_key(service_name, resource):
