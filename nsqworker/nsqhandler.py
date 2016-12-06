@@ -105,7 +105,7 @@ def with_lock(handler_func, nsq_lock_options):
         self.logger.warning("Acquiring lock timed out - resource {} is locked by another process".format(key))
         if nsq_lock_options.is_mandatory:
             self.logger.error("Lock is mandatory, aborting handler")
-            raise redis_errors.LockError("Mandatory lock not acquired, aborting handler")
+            raise _locker.LockerError("Mandatory lock not acquired, aborting handler")
 
         # lock is not mandatory run handler without lock
         return handler_func(self, message)

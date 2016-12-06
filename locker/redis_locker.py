@@ -18,6 +18,10 @@ LOCKED_RETRY_DURATION = 0.02
 ERR_RETRY_DURATION = 0.05
 
 
+class LockerError(Exception):
+    pass
+
+
 class RedisLocker:
     def __init__(self, service_name, logger=None):
         self.redis = redis_client.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0, password=REDIS_PASSWORD)
