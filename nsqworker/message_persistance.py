@@ -32,7 +32,7 @@ class MessagePersistor(object):
             self._redis = redis.StrictRedis(host=_host, port=_port,
                                             db=0, password=_password)
 
-    def persist_message(self, topic, channel, route, message):
+    def persist_message(self, topic, channel, route, message, err_str):
 
         if not self._redis:
             return None
@@ -44,7 +44,8 @@ class MessagePersistor(object):
             "channel": channel,
             "route": route,
             "message": message,
-            "persisted_at": persist_time.isoformat()
+            "persisted_at": persist_time.isoformat(),
+            "error_str": err_str
         }
 
         ts = time.mktime(persist_time.timetuple())
