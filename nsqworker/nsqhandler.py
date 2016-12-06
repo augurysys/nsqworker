@@ -44,6 +44,7 @@ def load_routes(cls):
              getattr(member, 'options', None) is not None]
     for options, handler in funcs:
         for matcher, lock_options in options:
+            # check if lock exist, and wrap handler with lock accordingly
             cls.register_route(matcher, handler) if lock_options is None else cls.register_route(
                 matcher, with_lock(handler, lock_options))
 
@@ -58,8 +59,6 @@ def route(matcher_func, nsq_lock_options=None):
         if getattr(handler_func, 'options', None) is None:
             handler_func.options = []
         handler_func.options.insert(0, (matcher_func, nsq_lock_options))
-        # lock is not needed
-        # if nsq_lock_options is None:
         return handler_func
 
     return wrapper
