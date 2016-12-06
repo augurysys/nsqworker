@@ -80,7 +80,7 @@ def with_lock(handler_func, nsq_lock_options):
         if resource_id is None:
             self.logger.warning("Cannot find lock resource id on event data path:{}".format(nsq_lock_options.path_to_id))
             if nsq_lock_options.is_mandatory:
-                raise Exception("Mandatory lock acquiring aborted due to lack of resource id on event data")
+                raise ValueError("Mandatory lock acquiring aborted due to lack of resource id on event data")
             else:
                 return handler_func(self, message)
 

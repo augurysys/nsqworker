@@ -3,6 +3,8 @@ import os
 import redis as redis_client
 import time
 
+import logging
+
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
@@ -17,9 +19,12 @@ ERR_RETRY_DURATION = 0.05
 
 
 class RedisLocker:
-    def __init__(self, service_name, logger):
+    def __init__(self, service_name, logger=None):
         self.redis = redis_client.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0, password=REDIS_PASSWORD)
         self.service_name = service_name
+        if logger is None:
+            logger = logging.getLogger(service_name)
+            logger.setLevel(logging.INFO)
         self.logger = logger
 
     def get_lock_object(self, key, lock_options):
@@ -54,7 +59,6 @@ class RedisLock:
                 err = re
                 if retries_index != self.__lock_obj.retries - 1:
                     time.sleep(ERR_RETRY_DURATION)
-                continue
         self.logger.warning('Failed {} times acquiring lock on resource with key: {}. Redis error message: {}'.
                             format(self.__retries, self.__lock_obj.name, err))
         raise err
