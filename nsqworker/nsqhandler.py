@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import string
 import sys
 import traceback
 from string import hexdigits
@@ -36,6 +37,10 @@ else:
     raise EnvironmentError("Please set NSQD_TCP_ADDRESSES / LOOKUPD_HTTP_ADDRESSES.")
 
 current_milli_time = lambda: int(round(time.time() * 1000))
+
+
+def get_random_string():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
 
 
 def load_routes(cls):
@@ -119,7 +124,7 @@ def with_lock(handler_func, nsq_lock_options):
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1,
-                 message_preprocessor=None):
+                 message_preprocessor=None, service_name=get_random_string()):
 
         """Wrapper around nsqworker.ThreadWorker
         """
@@ -128,7 +133,7 @@ class NSQHandler(NSQWriter):
         self.io_loop = ioloop.IOLoop.instance()
         self.topic = topic
         self.channel = channel
-        self.locker = _locker.RedisLocker("eventhandler", self.logger)
+        self.locker = _locker.RedisLocker(service_name, self.logger)
 
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
