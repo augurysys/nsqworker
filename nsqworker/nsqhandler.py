@@ -6,6 +6,7 @@ import sys
 import traceback
 from string import hexdigits
 from functools import wraps
+import time
 
 import nsq
 from tornado import ioloop
@@ -33,6 +34,8 @@ elif NSQD_TCP_ADDRESSES:
     kwargs['nsqd_tcp_addresses'] = NSQD_TCP_ADDRESSES
 else:
     raise EnvironmentError("Please set NSQD_TCP_ADDRESSES / LOOKUPD_HTTP_ADDRESSES.")
+
+current_milli_time = lambda: int(round(time.time() * 1000))
 
 
 def load_routes(cls):
@@ -219,7 +222,7 @@ class NSQHandler(NSQWriter):
             self.logger.info("[{}] Routing message to handler {}".format(
                 route_id, handler.__name__)
             )
-
+            start_time = current_milli_time()
             try:
 
                 handler(self, self._message_preprocessor(message))
@@ -237,8 +240,8 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            self.logger.info("[{}] Done handling {}".format(
-                route_id, handler.__name__)
+            self.logger.info("[{}] Done handling {} [time={}]".format(
+                route_id, handler.__name__, str(current_milli_time() - start_time))
             )
 
         self.logger.info("[END] [{}] [{}] [{}] [{}]".format(
