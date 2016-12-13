@@ -207,7 +207,7 @@ class NSQHandler(NSQWriter):
 
         handler_id = gen_random_string()
 
-        self.logger.info("[START] [{}] [{}] [{}] [{}]".format(
+        self.logger.info("[Handling new event] [{}] [{}] [{}] [{}]".format(
             handler_id, self.topic, self.channel, event_name
         ))
 
@@ -224,7 +224,7 @@ class NSQHandler(NSQWriter):
                 else:
                     continue
 
-            self.logger.info("[{}] Routing message to handler {}".format(
+            self.logger.info("[{}] [START] Routing message to handler {}".format(
                 route_id, handler.__name__)
             )
             start_time = current_milli_time()
@@ -245,11 +245,11 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            self.logger.info("[{}] Done handling [handler={}] [time={}]".format(
+            self.logger.info("[{}] [END] handling [route={}] [time={}]".format(
                 route_id, handler.__name__, str(current_milli_time() - start_time))
             )
 
-        self.logger.info("[END] [{}] [{}] [{}] [{}]".format(
+        self.logger.info("[DONE handling new event] [{}] [{}] [{}] [{}]".format(
             handler_id, self.topic, self.channel, event_name
         ))
 
