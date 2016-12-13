@@ -245,7 +245,7 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            self.logger.info("[{}] Done handling {} [time={}]".format(
+            self.logger.info("[{}] Done handling [handler={}] [time={}]".format(
                 route_id, handler.__name__, str(current_milli_time() - start_time))
             )
 
