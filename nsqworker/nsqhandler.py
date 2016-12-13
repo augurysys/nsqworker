@@ -207,11 +207,12 @@ class NSQHandler(NSQWriter):
 
         handler_id = gen_random_string()
 
-        self.logger.info("[Handling new event] [{}] [{}] [{}] [{}]".format(
+        self.logger.info("[{}] [Handling new event] [topic={}] [channel={}] [event_name={}]".format(
             handler_id, self.topic, self.channel, event_name
         ))
 
         for handler in handlers:
+            status = "OK"
             route_id = gen_random_string()
 
             if jsn is not None and self._persistor.is_persisted_message(jsn):
@@ -224,8 +225,8 @@ class NSQHandler(NSQWriter):
                 else:
                     continue
 
-            self.logger.info("[{}] [START] Routing message to handler {}".format(
-                route_id, handler.__name__)
+            self.logger.info("[{}] [START] Routing message to handler [route={}] [event_name={}]".format(
+                route_id, handler.__name__, event_name)
             )
             start_time = current_milli_time()
             try:
@@ -233,6 +234,7 @@ class NSQHandler(NSQWriter):
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:
+                status = "FAILED"
                 msg = "[{}] Handler {} failed handling message {} with error {}".format(
                     route_id, handler.__name__, message.body, e.message)
                 self.logger.error(msg)
@@ -245,11 +247,11 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            self.logger.info("[{}] [END] handling [route={}] [time={}]".format(
-                route_id, handler.__name__, str(current_milli_time() - start_time))
+            self.logger.info("[{}] [END] [route={}] [event_name={}] [status={}] [time={}] ".format(
+                route_id, handler.__name__, event_name, status, str(current_milli_time() - start_time))
             )
 
-        self.logger.info("[DONE handling new event] [{}] [{}] [{}] [{}]".format(
+        self.logger.info("[{}] [DONE handling new event] [topic={}] [channel={}] [event_name={}]".format(
             handler_id, self.topic, self.channel, event_name
         ))
 
