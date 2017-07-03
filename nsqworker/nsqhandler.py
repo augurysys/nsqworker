@@ -243,7 +243,7 @@ class NSQHandler(NSQWriter):
             except Exception as e:
                 if is_idempotent:
                     retry_count = jsn['retry_count'] + 1 if "retry_count" in jsn else 1
-                    if retry_count < RETRY_LIMIT:
+                    if retry_count <= RETRY_LIMIT:
                         # in case we did not reach the retry limit, we send a new message with the specific failed
                         # recipient and increasing the retry counter. We cannot use nsq's requeue mechanism because
                         # we must send the event to the specific handler so we wont run all related handlers again
