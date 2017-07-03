@@ -27,7 +27,7 @@ LOOKUPD_HTTP_ADDRESSES = os.environ.get('LOOKUPD_HTTP_ADDRESSES', "").split(",")
 if "" in LOOKUPD_HTTP_ADDRESSES:
     LOOKUPD_HTTP_ADDRESSES.remove("")
 # retry count limit of handling idempotent message
-RETRY_LIMIT = os.environ.get('RETRY_LIMIT', 3)
+RETRY_LIMIT = os.environ.get('RETRY_LIMIT', '3')
 if not RETRY_LIMIT.isdigit():
     raise EnvironmentError("Please set a number to the retry count")
 RETRY_LIMIT = int(RETRY_LIMIT)
