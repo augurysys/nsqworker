@@ -249,7 +249,8 @@ class NSQHandler(NSQWriter):
                         # we must send the event to the specific handler so we wont run all related handlers again
                         # (which are not guaranteed to be idempotent as well)
                         self._construct_recovery_message(jsn, handler.__name__, retry_count)
-                        self.send_message(self.topic, json.dumps(jsn), delay=RETRY_DELAY_DURATION * retry_count)
+                        NSQHandler.send_message(self, self.topic, json.dumps(jsn),
+                                                delay=RETRY_DELAY_DURATION * retry_count)
                         self.logger.info("[{}] [END] [route={}] [event={}] [status={}] [retry_count={}] [time={}] "
                                          .format(route_id, handler.__name__, event_name, "RESENT", retry_count,
                                                  str(current_milli_time() - start_time)))
