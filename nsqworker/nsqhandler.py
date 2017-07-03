@@ -73,7 +73,7 @@ def route(matcher_func, nsq_lock_options=None, is_idempotent=False):
     def wrapper(handler_func):
         if getattr(handler_func, 'options', None) is None:
             handler_func.options = []
-        handler_func.options.insert(0, (matcher_func, nsq_lock_options))
+        handler_func.options.insert(0, (matcher_func, nsq_lock_options, is_idempotent))
         return handler_func
 
     return wrapper
