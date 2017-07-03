@@ -26,6 +26,13 @@ if "" in NSQD_TCP_ADDRESSES:
 LOOKUPD_HTTP_ADDRESSES = os.environ.get('LOOKUPD_HTTP_ADDRESSES', "").split(",")
 if "" in LOOKUPD_HTTP_ADDRESSES:
     LOOKUPD_HTTP_ADDRESSES.remove("")
+# retry count limit of handling idempotent message
+RETRY_LIMIT = os.environ.get('RETRY_LIMIT', 3)
+if not RETRY_LIMIT.isdigit():
+    raise EnvironmentError("Please set a number to the retry count")
+RETRY_LIMIT = int(RETRY_LIMIT)
+
+RETRY_DELAY_DURATION = 1000
 
 kwargs = {}
 
@@ -51,15 +58,15 @@ def load_routes(cls):
     funcs = [(member.options, member) for name, member in cls.__dict__.items() if
              getattr(member, 'options', None) is not None]
     for options, handler in funcs:
-        for matcher, lock_options in options:
+        for matcher, lock_options, is_idempotent in options:
             # check if lock exist, and wrap handler with lock accordingly
-            cls.register_route(matcher, handler) if lock_options is None else cls.register_route(
-                matcher, with_lock(handler, lock_options))
+            cls.register_route(matcher, handler, is_idempotent) if lock_options is None else cls.register_route(
+                matcher, with_lock(handler, lock_options), is_idempotent)
 
     return cls
 
 
-def route(matcher_func, nsq_lock_options=None):
+def route(matcher_func, nsq_lock_options=None, is_idempotent=False):
     """Decorator for registering a class method along with it's route (matcher based)
     """
 
@@ -166,7 +173,7 @@ class NSQHandler(NSQWriter):
         return logger
 
     @classmethod
-    def register_route(cls, matcher_func, handler_func):
+    def register_route(cls, matcher_func, handler_func, is_idempotent):
         """Register route
         """
         if getattr(cls, "routes", None) is None:
@@ -176,7 +183,7 @@ class NSQHandler(NSQWriter):
         if getattr(handler_func, "im_self", None) is not None:
             handler_func = handler_func.__func__
 
-        cls.routes.append((matcher_func, handler_func))
+        cls.routes.append((matcher_func, handler_func, is_idempotent))
 
     def route_message(self, message):
         """Basic message router
@@ -188,10 +195,10 @@ class NSQHandler(NSQWriter):
         m_body = message.body
         handlers = []
 
-        for matcher_func, handler_func in self.__class__.routes:
+        for matcher_func, handler_func, is_idempotent in self.__class__.routes:
 
             if matcher_func(m_body) is True:
-                handlers.append(handler_func)
+                handlers.append((handler_func, is_idempotent))
 
         if len(handlers) == 0:
             self.logger.debug("No handlers found for message {}.".format(message.body))
@@ -211,7 +218,7 @@ class NSQHandler(NSQWriter):
             handler_id, self.topic, self.channel, event_name
         ))
 
-        for handler in handlers:
+        for handler, is_idempotent in handlers:
             status = "OK"
             route_id = gen_random_string()
 
@@ -234,14 +241,30 @@ class NSQHandler(NSQWriter):
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:
+                if is_idempotent:
+                    retry_count = jsn['retry_count'] + 1 if "retry_count" in jsn else 1
+                    if retry_count < RETRY_LIMIT:
+                        # in case we did not reach the retry limit, we send a new message with the specific failed
+                        # recipient and increasing the retry counter. We cannot use nsq's requeue mechanism because
+                        # we must send the event to the specific handler so we wont run all related handlers again
+                        # (which are not guaranteed to be idempotent as well)
+                        self._construct_recovery_message(jsn, handler.__name__, retry_count)
+                        self.send_message(self.topic, json.dumps(jsn), delay=RETRY_DELAY_DURATION * retry_count)
+                        self.logger.info("[{}] [END] [route={}] [event={}] [status={}] [retry_count={}] [time={}] "
+                                         .format(route_id, handler.__name__, event_name, "RESENT", retry_count,
+                                                 str(current_milli_time() - start_time)))
+                        continue
+
                 status = "FAILED"
                 msg = "[{}] Handler {} failed handling message {} with error {}".format(
                     route_id, handler.__name__, message.body, e.message)
-                self.logger.error(msg)
-                self.handle_exception(message, e)
 
+                self.logger.error(msg)
+
+                self.handle_exception(message, e)
                 if self._persistor.enabled:
-                    new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body, repr(e))
+                    new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body,
+                                                          repr(e))
                     if new:
                         self.logger.info("[{}] Persisted failed message".format(route_id))
                     else:
@@ -274,3 +297,10 @@ class NSQHandler(NSQWriter):
         error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
+
+    def _construct_recovery_message(self, msg_json, handler_name, retry_count):
+
+        msg_json['recipients'] = {
+            self.channel: [handler_name]
+        }
+        msg_json['retry_count'] = retry_count

@@ -42,17 +42,21 @@ class NSQWriter(object):
 
         return logger
 
-    def send_message(self, topic, message):
+    def send_message(self, topic, message, delay=None):
         """ A wrapper around io_loop.add_callback and writer.pub for sending a message
 
         :type topic: str
         :type message: str
+        :type delay: int
         """
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
         callback = functools.partial(self.finish_pub, topic=topic, payload=message)
-        self.io_loop.add_callback(self.writer.pub, topic, message, callback)
+        if delay is not None:
+            self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
+        else:
+            self.io_loop.add_callback(self.writer.pub, topic, message, callback)
 
     def send_messages(self, topic, messages):
         """ A wrapper around io_loop.add_callback and writer.mpub for sending multiple messages at once
