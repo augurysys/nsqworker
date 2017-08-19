@@ -239,11 +239,14 @@ class NSQHandler(NSQWriter):
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:
-
+                # In case of failure and route is idempotent re-queue the message until retry limit is reached
                 if is_idempotent and message.attempts <= RETRY_LIMIT:
                     self.logger.info(
-                        "[{}] Re-queuing failed message, current attempts: [{}] ".format(route_id, message.attempts))
+                        "[{}] trying to re-queue failed message, current attempts: [{}] ".format(route_id,
+                                                                                                 message.attempts))
                     message.requeue(backoff=True, delay=-1)
+                    self.logger.info(
+                        "[{}] message re-queued successfully".format(route_id))
                     continue
 
                 status = "FAILED"
