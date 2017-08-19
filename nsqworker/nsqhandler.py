@@ -158,7 +158,7 @@ class NSQHandler(NSQWriter):
     def get_logger(cls, name=None):
         logger = logging.getLogger(name or cls.__name__)
         if not logger.handlers:
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            formatter = logging.Formatter("%(levelname)s - %(message)s")
 
             handler = logging.StreamHandler(stream=sys.stdout)
             handler.setFormatter(formatter)
@@ -210,29 +210,23 @@ class NSQHandler(NSQWriter):
         except Exception:
             pass
 
-        handler_id = gen_random_string()
-
-        self.logger.info("[{}] [Handling new event] [topic={}] [channel={}] [event={}]".format(
-            handler_id, self.topic, self.channel, event_name
-        ))
+        route_id = gen_random_string()
 
         for handler, is_idempotent in handlers:
             status = "OK"
-            route_id = gen_random_string()
 
             if jsn is not None and self._persistor.is_persisted_message(jsn):
                 if self._persistor.is_route_message(jsn, self.channel, handler.__name__):
 
                     self.logger.info("[{}] Route {} in channel {} will handle persisted message".format(
-                        route_id, handler.__name__, self.channel
+                        route_id, self.topic, self.channel, handler.__name__, self.channel
                     ))
 
                 else:
                     continue
 
-            self.logger.info("[{}] [START] Routing message to handler [route={}] [event={}]".format(
-                route_id, handler.__name__, event_name)
-            )
+            self.logger.info("[{}] [START] [topic={}] [channel={}] [event={}] [route={}] [try_num={}]".format(
+                route_id, self.topic, self.channel, event_name, handler.__name__, message.attempts))
             start_time = current_milli_time()
             try:
 
@@ -264,13 +258,10 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            self.logger.info("[{}] [END] [route={}] [event={}] [status={}] [time={}] ".format(
-                route_id, handler.__name__, event_name, status, str(current_milli_time() - start_time))
-            )
-
-        self.logger.info("[{}] [DONE handling new event] [topic={}] [channel={}] [event={}]".format(
-            handler_id, self.topic, self.channel, event_name
-        ))
+            self.logger.info(
+                "[{}] [END] [topic={}] [channel={}] [event={}] [route={}] [try_num={}] [status={}] [time={}]".format(
+                    route_id, self.topic, self.channel, event_name, handler.__name__, message.attempts, status,
+                    str(current_milli_time() - start_time)))
 
     def handle_message(self, message):
         """
