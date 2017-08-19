@@ -158,7 +158,7 @@ class NSQHandler(NSQWriter):
     def get_logger(cls, name=None):
         logger = logging.getLogger(name or cls.__name__)
         if not logger.handlers:
-            formatter = logging.Formatter("%(levelname)s - %(message)s")
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
             handler = logging.StreamHandler(stream=sys.stdout)
             handler.setFormatter(formatter)
