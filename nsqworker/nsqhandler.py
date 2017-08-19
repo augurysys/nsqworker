@@ -32,8 +32,6 @@ if not RETRY_LIMIT.isdigit():
     raise EnvironmentError("Please set a number to the retry count")
 RETRY_LIMIT = int(RETRY_LIMIT)
 
-RETRY_DELAY_DURATION = 1000
-
 kwargs = {}
 
 if LOOKUPD_HTTP_ADDRESSES:
@@ -241,20 +239,11 @@ class NSQHandler(NSQWriter):
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:
-                if is_idempotent:
-                    message.requeue()
-                    # retry_count = jsn['retry_count'] + 1 if "retry_count" in jsn else 1
-                    # if retry_count <= RETRY_LIMIT:
-                    #     # in case we did not reach the retry limit, we send a new message with the specific failed
-                    #     # recipient and increasing the retry counter. We cannot use nsq's requeue mechanism because
-                    #     # we must send the event to the specific handler so we wont run all related handlers again
-                    #     # (which are not guaranteed to be idempotent as well)
-                    #     self._construct_recovery_message(jsn, handler.__name__, retry_count)
-                    #     NSQHandler.send_message(self, self.topic, json.dumps(jsn),
-                    #                             delay=RETRY_DELAY_DURATION * retry_count)
-                    #     self.logger.info("[{}] [END] [route={}] [event={}] [status={}] [retry_count={}] [time={}] "
-                    #                      .format(route_id, handler.__name__, event_name, "RESENT", retry_count,
-                    #                              str(current_milli_time() - start_time)))
+
+                if is_idempotent and message.attempts <= RETRY_LIMIT:
+                    self.logger.info(
+                        "[{}] Re-queuing failed message, current attempts: [{}] ".format(route_id, message.attempts))
+                    message.requeue(backoff=True, delay=-1)
                     continue
 
                 status = "FAILED"
@@ -299,10 +288,3 @@ class NSQHandler(NSQWriter):
         error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
-
-    def _construct_recovery_message(self, msg_json, handler_name, retry_count):
-
-        msg_json['recipients'] = {
-            self.channel: [handler_name]
-        }
-        msg_json['retry_count'] = retry_count
