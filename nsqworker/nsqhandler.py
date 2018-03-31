@@ -1,11 +1,11 @@
 import json
 import logging
 import os
-import random
 import string
 import sys
+import random
 import traceback
-from string import hexdigits
+
 from functools import wraps
 import time
 
@@ -17,7 +17,9 @@ from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
 
+from utils import gen_random_string
 from message_persistance import MessagePersistor
+from nonsq import NoNSQ, nonsq_enabled
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -75,11 +77,6 @@ def route(matcher_func, nsq_lock_options=None, is_idempotent=False):
         return handler_func
 
     return wrapper
-
-
-def gen_random_string(n=10):
-    return ''.join(random.choice(hexdigits) for _ in range(n))
-
 
 _identity = lambda x: x
 
@@ -144,13 +141,16 @@ class NSQHandler(NSQWriter):
 
         self._persistor = MessagePersistor(self.logger)
 
-        ThreadWorker(
-            message_handler=self.handle_message,
-            exception_handler=self.handle_exception,
-            timeout=timeout,
-            concurrency=concurrency,
-            topic=topic, channel=channel, **kwargs
-        ).subscribe_worker()
+        if nonsq_enabled():
+            NoNSQ().register_handler(self)
+        else:
+            ThreadWorker(
+                message_handler=self.handle_message,
+                exception_handler=self.handle_exception,
+                timeout=timeout,
+                concurrency=concurrency,
+                topic=topic, channel=channel, **kwargs
+            ).subscribe_worker()
 
         # self.routes = []
 
@@ -193,6 +193,8 @@ class NSQHandler(NSQWriter):
         m_body = message.body
         handlers = []
 
+        results = {}
+
         for matcher_func, handler_func, is_idempotent in self.__class__.routes:
 
             if matcher_func(m_body) is True:
@@ -231,8 +233,9 @@ class NSQHandler(NSQWriter):
             try:
 
                 handler(self, self._message_preprocessor(message))
-
+                results[handler.__name__] = None
             except Exception as e:
+                results[handler.__name__] = e
                 # In case of failure and route is idempotent re-queue the message until retry limit is reached
                 if is_idempotent and message.attempts <= RETRY_LIMIT:
                     self.logger.info(
@@ -262,6 +265,8 @@ class NSQHandler(NSQWriter):
                 "[{}] [END] [topic={}] [channel={}] [event={}] [route={}] [try_num={}] [status={}] [time={}]".format(
                     route_id, self.topic, self.channel, event_name, handler.__name__, message.attempts, status,
                     str(current_milli_time() - start_time)))
+            
+            return results
 
     def handle_message(self, message):
         """

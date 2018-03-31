@@ -7,6 +7,8 @@ from tornado import ioloop
 import nsq
 from nsq import Error
 
+from nonsq import nonsq_enabled, NoNSQ
+
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
@@ -16,8 +18,10 @@ if "" in NSQD_TCP_ADDRESSES:
 class NSQWriter(object):
     def __init__(self):
         self.logger = self.__class__.get_logger()
-        self.writer = self.get_writer()
-        self.io_loop = ioloop.IOLoop.current()
+
+        if not nonsq_enabled:
+            self.writer = self.get_writer()
+            self.io_loop = ioloop.IOLoop.current()
 
     def get_writer(self):
         if len(NSQD_TCP_ADDRESSES) == 0:
@@ -49,6 +53,11 @@ class NSQWriter(object):
         :type message: str
         :type delay: int
         """
+
+        if nonsq_enabled():
+            NoNSQ().send_message(topic, message, False)
+            return
+
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
@@ -64,6 +73,9 @@ class NSQWriter(object):
         :type topic: str
         :type messages: list[str]
         """
+        if nonsq_enabled():
+            NoNSQ().send_messages(topic, messages, False)
+
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
