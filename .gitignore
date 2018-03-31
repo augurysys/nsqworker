@@ -3,3 +3,4 @@
 *.pyc
 /.project
 .vscode
+nsqworker.egg-info
