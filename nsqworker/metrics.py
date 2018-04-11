@@ -13,8 +13,6 @@ NSQ_RECEIVED_MESSAGES_HISTOGRAM = prometheus_client.Histogram(
     'histogram of received messages',
     ['topic', 'channel', 'status', 'event'])
 
-NSQ_MESSAGES_SENT_COUNTER.labels('x').inc()
-
 
 def start_metrics_server(port):
     prometheus_client.start_http_server(port)
