@@ -18,6 +18,7 @@ import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
 
 from message_persistance import MessagePersistor
+from metrics import NSQ_RECEIVED_MESSAGES_HISTOGRAM
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -257,6 +258,12 @@ class NSQHandler(NSQWriter):
                         self.logger.info("[{}] Persisted failed message".format(route_id))
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
+
+            NSQ_RECEIVED_MESSAGES_HISTOGRAM.labels(
+                self.topic, self.channel, status, handler.__name__
+            ).observe(
+                current_milli_time() - start_time
+            )
 
             self.logger.info(
                 "[{}] [END] [topic={}] [channel={}] [event={}] [route={}] [try_num={}] [status={}] [time={}]".format(
