@@ -6,7 +6,7 @@ import logging
 from tornado import ioloop
 import nsq
 from nsq import Error
-from metrics import NSQ_MESSAGES_SENT_COUNTER, NSQ_MESSAGES_RETRY_COUNTER
+from metrics import MESSAGES_SENT_COUNTER, MESSAGES_RETRY_COUNTER
 
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -82,7 +82,7 @@ class NSQWriter(object):
         # Parse conn and data to decide whether message failed or not
         if isinstance(data, Error) or conn is None or data != 'OK':
             # Message failed, re-send
-            NSQ_MESSAGES_RETRY_COUNTER.labels(topic).inc()
+            MESSAGES_RETRY_COUNTER.labels(topic).inc()
             self.logger.error("Message failed, waiting {} seconds before trying again..".format(delay))
             # Take a short break and then try to resend the message
             if isinstance(payload, str):
@@ -90,5 +90,5 @@ class NSQWriter(object):
             elif isinstance(payload, list):
                 self.io_loop.call_later(delay, self.send_messages, topic, payload)
         else:
-            NSQ_MESSAGES_SENT_COUNTER.labels(topic).inc()
+            MESSAGES_SENT_COUNTER.labels(topic).inc()
             self.logger.debug("Sent message {}.".format(payload))

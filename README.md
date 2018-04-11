@@ -76,3 +76,17 @@ Due to `concurrent.futures.ThreadPoolExecutor` limitations it is impossible to c
 The same logging level can be used with other loggers by getting it form the worker with `numric_level = worker.logger.level`
 
 * TODO - message de-duping.
+
+
+Metrics
+-------
+
+There are 3 supported metric types:
+* MESSAGES_SENT_COUNTER - nsq_messages_sent_count
+* MESSAGES_RETRY_COUNTER - nsq_messages_retry_count
+* RECEIVED_MESSAGES_HISTOGRAM - nsq_received_messages histogram
+
+To plug metrics exposing to your app you can either use:
+* ```start_metrics_server(port)``` - stars a simple http server on specified port
+* ```make_wsgi_app``` - returns a simple wsgi app which you can plug to your already running webserver (best practice is to add it to ```/metrics```)
+* if prometheus is already served, importing the nsq project will register the metrics to prometheus' ```REGISTRY```
