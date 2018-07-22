@@ -252,7 +252,7 @@ class NSQHandler(NSQWriter):
                 self.handle_exception(message, e)
                 if self._persistor.enabled:
                     new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body,
-                                                          repr(e))
+                                                          repr(e), gen_random_string(6))
                     if new:
                         self.logger.info("[{}] Persisted failed message".format(route_id))
                     else:

@@ -5,7 +5,7 @@ from datetime import datetime
 
 import redis
 
-MESSAGE_STORE_KEY = "eh:messages:failed"
+MESSAGE_STORE_KEY = "eh:messages:failed:hash"
 
 
 class MessagePersistor(object):
@@ -32,7 +32,7 @@ class MessagePersistor(object):
             self._redis = redis.StrictRedis(host=_host, port=_port,
                                             db=0, password=_password)
 
-    def persist_message(self, topic, channel, route, message, err_str):
+    def persist_message(self, topic, channel, route, message, err_str, id):
 
         if not self._redis:
             return None
@@ -48,9 +48,7 @@ class MessagePersistor(object):
             "error_str": err_str
         }
 
-        ts = time.mktime(persist_time.timetuple())
-
-        new = self._redis.zadd(MESSAGE_STORE_KEY, ts, json.dumps(doc))
+        new = self._redis.hset(MESSAGE_STORE_KEY, id, json.dumps(doc))
         return new
 
     def is_persisted_message(self, message):
