@@ -41,6 +41,11 @@ elif NSQD_TCP_ADDRESSES:
 else:
     raise EnvironmentError("Please set NSQD_TCP_ADDRESSES / LOOKUPD_HTTP_ADDRESSES.")
 
+max_in_flight = os.environ.get('NSQ_MAX_IN_FLIGHT', '1')
+if not max_in_flight.isdigit():
+    max_in_flight = '1'
+kwargs['max_in_flight'] = int(max_in_flight)
+
 current_milli_time = lambda: int(round(time.time() * 1000))
 
 

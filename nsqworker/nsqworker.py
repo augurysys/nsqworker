@@ -105,10 +105,9 @@ class ThreadWorker:
         kwargs = self.kwargs
 
         kwargs["message_handler"] = self._message_handler
-        kwargs["max_in_flight"] = self.concurrency
 
         self.reader = nsq.Reader(**kwargs)
 
         self.logger.info("Added an handler for NSQD messages on topic {}, channel {}.".format(self.kwargs["topic"],
                                                                                               self.kwargs["channel"]))
-        self.logger.info("Handling messages with {} thread.".format(self.concurrency))
+        self.logger.info("Handling messages with {} threads and {} max_in_flight.".format(self.concurrency, kwargs['max_in_flight']))
