@@ -2,6 +2,8 @@ import os
 import sys
 import functools
 import logging
+import sys
+
 
 from tornado import ioloop
 import nsq
@@ -53,6 +55,11 @@ class NSQWriter(object):
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
         callback = functools.partial(self.finish_pub, topic=topic, payload=message)
+
+        bytes_size = len(message)
+        if bytes_size > 1048576:
+            raise ValueError("Message is too big. [message=%s] in [topic=%s]", message, topic)
+
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
         else:
