@@ -7,6 +7,8 @@ from tornado import ioloop
 import nsq
 from nsq import Error
 
+BYTES_MAX_SIZE = 1048576
+
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
@@ -53,6 +55,11 @@ class NSQWriter(object):
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
         callback = functools.partial(self.finish_pub, topic=topic, payload=message)
+
+        bytes_size = len(message)
+        if bytes_size > BYTES_MAX_SIZE:
+            raise ValueError("Message is too big. message={} in topic={}".format(message, topic))
+
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
         else:
