@@ -1,5 +1,4 @@
 import os
-import sys
 import functools
 import logging
 import sys
@@ -8,6 +7,9 @@ import sys
 from tornado import ioloop
 import nsq
 from nsq import Error
+
+BYTES_MAX_SIZE = 1048576
+
 
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -57,8 +59,8 @@ class NSQWriter(object):
         callback = functools.partial(self.finish_pub, topic=topic, payload=message)
 
         bytes_size = len(message)
-        if bytes_size > 1048576:
-            raise ValueError("Message is too big. [message=%s] in [topic=%s]", message, topic)
+        if bytes_size > BYTES_MAX_SIZE:
+            raise ValueError("Message is too big. message={} in topic={}".format(message, topic))
 
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
