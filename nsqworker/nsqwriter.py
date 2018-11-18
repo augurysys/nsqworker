@@ -7,7 +7,11 @@ from tornado import ioloop
 import nsq
 from nsq import Error
 
-BYTES_MAX_SIZE = 1048576
+
+BYTES_MAX_SIZE = os.environ.get('BYTES_MAX_SIZE', '1048576')
+if not BYTES_MAX_SIZE.isdigit():
+    raise EnvironmentError("Please set a number to the BYTES_MAX_SIZE")
+BYTES_MAX_SIZE = int(BYTES_MAX_SIZE)
 
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
