@@ -7,6 +7,12 @@ from tornado import ioloop
 import nsq
 from nsq import Error
 
+
+BYTES_MAX_SIZE = os.environ.get('BYTES_MAX_SIZE', '1048576')
+if not BYTES_MAX_SIZE.isdigit():
+    raise EnvironmentError("Please set a number to the BYTES_MAX_SIZE")
+BYTES_MAX_SIZE = int(BYTES_MAX_SIZE)
+
 # Fetch NSQD addres
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
@@ -53,6 +59,11 @@ class NSQWriter(object):
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
         callback = functools.partial(self.finish_pub, topic=topic, payload=message)
+
+        bytes_size = len(message)
+        if bytes_size > BYTES_MAX_SIZE:
+            raise ValueError("Message is too big. message={} in topic={}".format(message, topic))
+
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
         else:
@@ -79,6 +90,8 @@ class NSQWriter(object):
         delay = 1
 
         # Parse conn and data to decide whether message failed or not
+        # Parse conn and data to decide whether message failed or not
+        self.logger.error('[connection=%s] failed to PUBLISH [topic=%s], [data=%s]', conn.id if conn else 'NA', topic, data)
         if isinstance(data, Error) or conn is None or data != 'OK':
             # Message failed, re-send
             self.logger.error("Message failed, waiting {} seconds before trying again..".format(delay))
