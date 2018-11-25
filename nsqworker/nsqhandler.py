@@ -43,10 +43,8 @@ else:
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
-
 def get_random_string():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
-
 
 def load_routes(cls):
     """Class decorator for NSQHandler subclasses to load all routes
@@ -128,7 +126,7 @@ def with_lock(handler_func, nsq_lock_options):
 
 
 class NSQHandler(NSQWriter):
-    def __init__(self, topic, channel, timeout=None, concurrency=1,
+    def __init__(self, topic, channel, timeout=None, concurrency=1, max_in_flight=1,
                  message_preprocessor=None, service_name=get_random_string()):
 
         """Wrapper around nsqworker.ThreadWorker
@@ -149,6 +147,7 @@ class NSQHandler(NSQWriter):
             exception_handler=self.handle_exception,
             timeout=timeout,
             concurrency=concurrency,
+            max_in_flight=max_in_flight,
             topic=topic, channel=channel, **kwargs
         ).subscribe_worker()
 
