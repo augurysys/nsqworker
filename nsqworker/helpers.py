@@ -5,7 +5,7 @@ from time import sleep
 
 
 def nsq_config_from_env():
-    
+
     concurrency = int(os.environ.get("NSQ_CONCURRENCY", "1"))
     max_in_flight = int(os.environ.get("NSQ_MAX_IN_FLIGHT", "1"))
 
@@ -16,8 +16,6 @@ def nsq_config_from_env():
 
 
 # Create NSQ topics
-
-
 def register_nsq_topics(nsqd_http_hosts, topic_names):
     topic_hosts = []
     for host in nsqd_http_hosts:
