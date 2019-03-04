@@ -1,5 +1,5 @@
 import os
-import urllib2
+import requests
 import logging
 from time import sleep
 
@@ -29,15 +29,21 @@ def register_nsq_topics(nsqd_http_hosts, topic_names):
 
 def post_topic(nsq_http, topic):
     try:
-        res = urllib2.urlopen("http://" + nsq_http + "/topic/create?topic="+str(topic), data="", timeout=1)
-        if res.code != 200:
-            logging.warning("Bad response for creating EVENTS topic: " + str(res.code))
+        res = requests.get(
+            "http://" + nsq_http + "/topic/create?topic="+str(topic), data="", timeout=1
+        )
+        if res.status_code != 200:
+            logging.warning(
+                "Bad response for creating {} topic: {}".format(topic, str(res.status_code))
+            )
         else:
             logging.warning("topic {} created successfully on nsqd {}".format(topic, nsq_http))
             return True
-    except urllib2.HTTPError, e:
-        logging.warning("got HTTP Error while trying to create topic %s, err msg: %s", str(topic), str(e.code))
-        return False
-    except urllib2.URLError, e:
-        logging.warning("got URL Error while trying to create topic %s, err msg: %s", str(topic), str(e.args))
+
+    except Exception as e:
+        logging.warning(
+            "got HTTP Error while trying to create topic {}, err msg: {}".format(
+                str(topic), str(e)
+            )
+        )
         return False
