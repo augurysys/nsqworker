@@ -29,7 +29,7 @@ def register_nsq_topics(nsqd_http_hosts, topic_names):
 
 def post_topic(nsq_http, topic):
     try:
-        res = requests.get(
+        res = requests.post(
             "http://" + nsq_http + "/topic/create?topic="+str(topic), data="", timeout=1
         )
         if res.status_code != 200:
