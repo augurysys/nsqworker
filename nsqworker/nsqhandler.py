@@ -10,7 +10,7 @@ from functools import wraps
 import time
 
 import nsq
-from auguryapi.metrics import inc_message_handling_count
+from auguryapi.metrics import measure_nsq_latency, measure_nsq_stats
 from tornado import ioloop
 
 from nsqworker import ThreadWorker
@@ -229,7 +229,6 @@ class NSQHandler(NSQWriter):
                 route_id, self.topic, self.channel, event_name, handler.__name__, message.attempts))
             start_time = current_milli_time()
             try:
-                inc_message_handling_count()
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:
@@ -257,6 +256,12 @@ class NSQHandler(NSQWriter):
                         self.logger.info("[{}] Persisted failed message".format(route_id))
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
+
+            measure_nsq_latency(duration=float(current_milli_time() - start_time),
+                                topic=self.topic, channel=self.channel,
+                                event=event_name, route=handler.__name__)
+            measure_nsq_stats(status=status, topic=self.topic, channel=self.channel,
+                              event=event_name, route=handler.__name__)
 
             self.logger.info(
                 "[{}] [END] [topic={}] [channel={}] [event={}] [route={}] [try_num={}] [status={}] [time={}]".format(
