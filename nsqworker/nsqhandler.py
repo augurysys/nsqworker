@@ -10,6 +10,7 @@ from functools import wraps
 import time
 
 import nsq
+from auguryapi.metrics import inc_message_handling_count
 from tornado import ioloop
 
 from nsqworker import ThreadWorker
@@ -228,7 +229,7 @@ class NSQHandler(NSQWriter):
                 route_id, self.topic, self.channel, event_name, handler.__name__, message.attempts))
             start_time = current_milli_time()
             try:
-
+                inc_message_handling_count()
                 handler(self, self._message_preprocessor(message))
 
             except Exception as e:

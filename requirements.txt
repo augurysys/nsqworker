@@ -5,3 +5,4 @@ mdict
 redis
 opencensus-ext-prometheus
 opencensus
+git+ssh://git@github.com/augurysys/auguryapi-py.git@e3f6d98568a86c41ea96ab63aa2064d2db1174b7
