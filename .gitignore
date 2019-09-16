@@ -5,3 +5,4 @@
 .vscode
 nsqworker.egg-info
 Pipfile
+.env

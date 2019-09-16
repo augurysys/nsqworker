@@ -16,7 +16,7 @@ from opencensus.tags import tag_key as tag_key_module
 from opencensus.tags import tag_map as tag_map_module
 from opencensus.tags import tag_value as tag_value_module
 
-MEASURE_MESSAGES_COUNT = measure_module.MeasureInt('message_count','counting messages')
+MEASURE_MESSAGES_COUNT = measure_module.MeasureInt('message_count', 'counting messages')
 KEY_COUNT = tag_key_module.TagKey("message")
 COUNT_VIEW = view_module.View("demo_module_view_counter", "counting messages poc",
     [KEY_COUNT],
@@ -40,15 +40,7 @@ class NSQWriter(object):
         self.logger = self.__class__.get_logger()
         self.writer = self.get_writer()
         self.io_loop = ioloop.IOLoop.current()
-        stats = stats_module.stats
-        view_manager = stats.view_manager
-        self.exporter = prometheus.new_stats_exporter(prometheus.Options(namespace="nsq"))
-        view_manager.register_exporter(self.exporter)
-        view_manager.register_view(COUNT_VIEW)
-        stats_recorder = stats_module.stats.stats_recorder
         self.mmap = stats_recorder.new_measurement_map()
-
-
 
     def get_writer(self):
         if len(NSQD_TCP_ADDRESSES) == 0:
