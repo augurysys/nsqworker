@@ -4,3 +4,4 @@ futures
 mdict
 redis
 opencensus-ext-prometheus
+opencensus
