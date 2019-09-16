@@ -4,3 +4,4 @@
 /.project
 .vscode
 nsqworker.egg-info
+Pipfile
