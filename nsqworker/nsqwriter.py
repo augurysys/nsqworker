@@ -7,22 +7,6 @@ from tornado import ioloop
 import nsq
 from nsq import Error
 
-from opencensus.ext.prometheus import stats_exporter as prometheus
-from opencensus.stats import aggregation as aggregation_module
-from opencensus.stats import measure as measure_module
-from opencensus.stats import stats as stats_module
-from opencensus.stats import view as view_module
-from opencensus.tags import tag_key as tag_key_module
-from opencensus.tags import tag_map as tag_map_module
-from opencensus.tags import tag_value as tag_value_module
-
-MEASURE_MESSAGES_COUNT = measure_module.MeasureInt('message_count', 'counting messages')
-KEY_COUNT = tag_key_module.TagKey("message")
-COUNT_VIEW = view_module.View("demo_module_view_counter", "counting messages poc",
-    [KEY_COUNT],
-    MEASURE_MESSAGES_COUNT,
-    aggregation_module.CountAggregation())
-
 
 BYTES_MAX_SIZE = os.environ.get('BYTES_MAX_SIZE', '1048576')
 if not BYTES_MAX_SIZE.isdigit():
@@ -40,7 +24,6 @@ class NSQWriter(object):
         self.logger = self.__class__.get_logger()
         self.writer = self.get_writer()
         self.io_loop = ioloop.IOLoop.current()
-        self.mmap = stats_recorder.new_measurement_map()
 
     def get_writer(self):
         if len(NSQD_TCP_ADDRESSES) == 0:
@@ -80,11 +63,6 @@ class NSQWriter(object):
         bytes_size = len(message)
         if bytes_size > BYTES_MAX_SIZE:
             raise ValueError("Message is too big. message={} in topic={}".format(message, topic))
-
-        self.mmap.measure_int_put(MEASURE_MESSAGES_COUNT, 1)
-        tmap = tag_map_module.TagMap()
-        tmap.insert(KEY_COUNT, tag_value_module.TagValue("tag_value_text"))
-        self.mmap.record(tmap)
 
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
