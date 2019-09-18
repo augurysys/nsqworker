@@ -257,9 +257,9 @@ class NSQHandler(NSQWriter):
                     else:
                         self.logger.info("[{}] Updated existing failed message".format(route_id))
 
-            # measure_nsq_latency(duration=float(current_milli_time() - start_time),
-                                # topic=self.topic, channel=self.channel,
-                                # event=event_name, route=handler.__name__)
+            measure_nsq_latency(duration=float(current_milli_time() - start_time),
+                                topic=self.topic, channel=self.channel,
+                                event=event_name, route=handler.__name__)
             measure_nsq_stats(status=status, topic=self.topic, channel=self.channel,
                               event=event_name, route=handler.__name__)
 
