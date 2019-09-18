@@ -3,4 +3,4 @@ pynsq
 futures
 mdict
 redis
-git+ssh://git@github.com/augurysys/auguryapi-py.git@c8e5ede91fb6fbe31f38170774379255a86a79fb
+git+ssh://git@github.com/augurysys/auguryapi-py.git@395b1ce0269d9805406660e44c11c37e6fc9dee1
