@@ -1,20 +1,10 @@
 from setuptools import setup
 
-
-with open('requirements.txt', 'rt') as f_req:
-    rows = f_req.readlines()
-    reqs = []
-    dep_links = []
-    for req in rows:
-        if not req.startswith('git+'):
-            reqs.append(req)
-        else:
-            dep_links.append('"{}"'.format(req))
-
 setup(
     name='nsqworker',
     packages=['nsqworker', 'locker'],
     version='0.0.1',
-    install_requires=reqs,
-    dependency_links=dep_links,
+    install_requires=['tornado==4.5.3', 'pynsq', 'futures', 'mdict', 'redis',
+    'auguryapi @git+ssh://git@github.com/augurysys/auguryapi-py.git@7e29797ff6abb30f372ce4950a1e53cca05da85e#egg=auguryapi'
+    ],
 )
