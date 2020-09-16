@@ -29,10 +29,11 @@ def json_matcher(field, value):
     def match(message):
         try:
             message = json.loads(message)
+            md = mdict.MDict(message)
         except ValueError:
             return False
 
-        return message.get(field) == value
+        return md.get(field) == value
 
     return match
 
