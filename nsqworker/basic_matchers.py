@@ -37,6 +37,23 @@ def json_matcher(field, value):
     return match
 
 
+def json_mdict_matcher(field, value):
+    """Basic JSON->Dict matcher
+
+    Returns a method for matching a message `field:internalField:internalInternalField` against `value`
+    """
+    def match(message):
+        try:
+            message = json.loads(message)
+            md = mdict.MDict(message)
+        except ValueError:
+            return False
+
+        return md.get(field) == value
+
+    return match
+
+
 def regex_matcher(pattern):
     """Basic regular expression matcher
 
