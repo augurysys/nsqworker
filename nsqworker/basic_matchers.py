@@ -29,22 +29,6 @@ def json_matcher(field, value):
     def match(message):
         try:
             message = json.loads(message)
-        except ValueError:
-            return False
-
-        return message.get(field) == value
-
-    return match
-
-
-def json_mdict_matcher(field, value):
-    """Basic JSON->Dict matcher
-
-    Returns a method for matching a message `field:internalField:internalInternalField` against `value`
-    """
-    def match(message):
-        try:
-            message = json.loads(message)
             md = mdict.MDict(message)
         except ValueError:
             return False
