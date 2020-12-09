@@ -17,8 +17,12 @@ from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
+from raven import Client as RavenClient
 
 from message_persistance import MessagePersistor
+
+# initialize a Raven client
+raven_client = RavenClient()
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -243,11 +247,11 @@ class NSQHandler(NSQWriter):
                     continue
 
                 status = "FAILED"
-                msg = "[{}] Handler {} failed handling message {} with error {}".format(
+                msg = "New Failed event: [{}] Handler {} failed handling message {} with error {}".format(
                     route_id, handler.__name__, message.body, e.message)
 
                 self.logger.error(msg)
-
+                raven_client.captureException(message=msg)
                 self.handle_exception(message, e)
                 if self._persistor.enabled:
                     new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body,
