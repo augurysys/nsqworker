@@ -243,7 +243,7 @@ class NSQHandler(NSQWriter):
                     continue
 
                 status = "FAILED"
-                msg = "New NSQ Failed event: [{}] Handler {} failed handling message {} with error {}".format(
+                msg = "[{}] Handler {} failed handling message {} with error {}".format(
                     route_id, handler.__name__, message.body, e.message)
 
                 self.logger.error(msg)
