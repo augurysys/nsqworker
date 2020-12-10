@@ -247,7 +247,7 @@ class NSQHandler(NSQWriter):
                     route_id, handler.__name__, message.body, e.message)
 
                 self.logger.error(msg)
-                self.handle_exception(message, e, tags={"route": handler.__name__})
+                self.handle_exception(message, e, tags={"route": handler.__name__, "error": msg})
                 if self._persistor.enabled:
                     new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body,
                                                           repr(e))
