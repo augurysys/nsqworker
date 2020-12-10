@@ -17,12 +17,8 @@ from nsqworker import ThreadWorker
 from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
-from raven import Client as RavenClient
 
 from message_persistance import MessagePersistor
-
-# initialize a Raven client
-raven_client = RavenClient()
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -132,7 +128,7 @@ def with_lock(handler_func, nsq_lock_options):
 
 class NSQHandler(NSQWriter):
     def __init__(self, topic, channel, timeout=None, concurrency=1, max_in_flight=1,
-                 message_preprocessor=None, service_name=get_random_string()):
+                 message_preprocessor=None, service_name=get_random_string(), raven_client=None):
 
         """Wrapper around nsqworker.ThreadWorker
         """
@@ -142,7 +138,7 @@ class NSQHandler(NSQWriter):
         self.topic = topic
         self.channel = channel
         self.locker = _locker.RedisLocker(service_name, self.logger)
-
+        self.raven_client = raven_client
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
         self._persistor = MessagePersistor(self.logger)
@@ -247,12 +243,11 @@ class NSQHandler(NSQWriter):
                     continue
 
                 status = "FAILED"
-                msg = "New Failed event: [{}] Handler {} failed handling message {} with error {}".format(
+                msg = "New NSQ Failed event: [{}] Handler {} failed handling message {} with error {}".format(
                     route_id, handler.__name__, message.body, e.message)
 
                 self.logger.error(msg)
-                raven_client.captureException(message=msg)
-                self.handle_exception(message, e)
+                self.handle_exception(message, e, notify=True, tags={"route": handler.__name__})
                 if self._persistor.enabled:
                     new = self._persistor.persist_message(self.topic, self.channel, handler.__name__, m_body,
                                                           repr(e))
@@ -282,12 +277,17 @@ class NSQHandler(NSQWriter):
         self.route_message(message)
         self.logger.debug("Finished handling message: {}".format(message.body))
 
-    def handle_exception(self, message, e):
+    def handle_exception(self, message, e, notify=True, tags=None):
         """
         Basic error handler
         :type message: nsq.Message
         :type e: Exception
+        :type tags: dict
+        :type notify: bool
         """
         error = "message raised an exception: {}. Message body: {}".format(e, message.body)
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
+        if notify and self.raven_client is not None:
+            self.raven_client.captureException(message=message.body, error_message=e.message, tags=tags)
+
