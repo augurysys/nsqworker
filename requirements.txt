@@ -4,4 +4,3 @@ futures
 mdict
 redis
 git+ssh://git@github.com/augurysys/auguryapi-py.git@0.9.33
-raven
