@@ -77,3 +77,6 @@ class ProcessWorker:
             self.service_name, self.kwargs["topic"], self.kwargs["channel"]))
         self.logger.info("Handling messages with a single thread and {} max_in_flight.".format(
             self.max_in_flight))
+
+    def stop(self):
+        self.reader.close()
