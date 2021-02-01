@@ -46,7 +46,7 @@ def post_topic(nsq_http, topic):
                 "Bad response for creating {} topic: {}".format(topic, str(res.status_code))
             )
         else:
-            logging.warning("topic {} created successfully on nsqd {}".format(topic, nsq_http))
+            logging.info("topic {} created successfully on nsqd {}".format(topic, nsq_http))
             return True
 
     except Exception as e:
