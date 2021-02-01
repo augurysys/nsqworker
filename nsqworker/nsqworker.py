@@ -13,7 +13,7 @@ from errors import TimeoutError
 
 class ThreadWorker:
     def __init__(self, message_handler=None, exception_handler=None,
-                    concurrency=1, max_in_flight=1, timeout=None, **kwargs):
+                    concurrency=1, max_in_flight=1, timeout=None, service_name="no_name", **kwargs):
         self.io_loop = ioloop.IOLoop.instance()
         self.executor = ThreadPoolExecutor(concurrency)
         self.concurrency = concurrency
@@ -22,6 +22,7 @@ class ThreadWorker:
         self.message_handler = message_handler
         self.exception_handler = exception_handler
         self.timeout = timeout
+        self.service_name = service_name
 
         self.logger = ThreadWorker.get_logger()
 
@@ -104,13 +105,14 @@ class ThreadWorker:
         self.logger.debug("Finished handling message %s", message.id)
 
     def subscribe_worker(self):
-        kwargs = {k:v for k,v in self.kwargs.items()}
+        kwargs = {k: v for k, v in self.kwargs.items()}
 
         kwargs["message_handler"] = self._message_handler
         kwargs["max_in_flight"] = self.max_in_flight
 
         self.reader = nsq.Reader(**kwargs)
 
-        self.logger.info("Added an handler for NSQD messages on topic {}, channel {}.".format(self.kwargs["topic"],
-                                                                                              self.kwargs["channel"]))
-        self.logger.info("Handling messages with {} threads and {} max_in_flight.".format(self.concurrency, self.max_in_flight))
+        self.logger.info("Added an handler for NSQD messages on [service_name={}] [topic={}], [channel={}].".format(
+            self.service_name, self.kwargs["topic"], self.kwargs["channel"]))
+        self.logger.info("Handling messages with {} threads and {} max_in_flight.".format(
+            self.concurrency, self.max_in_flight))
