@@ -11,6 +11,29 @@ from tornado.concurrent import run_on_executor
 from errors import TimeoutError
 
 
+def get_logger(logger_name):
+    logger = logging.getLogger(logger_name)
+    if not logger.handlers:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--loglevel', nargs='?', help='log level', default='INFO')
+        args = parser.parse_args()
+
+        level = getattr(logging, args.loglevel.upper())
+        if not isinstance(level, int):
+            raise ValueError('Invalid log level: %s' % args.loglevel)
+
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+        handler = logging.StreamHandler(stream=sys.stdout)
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+
+        logger.addHandler(handler)
+        logger.setLevel(level)
+        logger.propagate = 0
+    return logger
+
+
 class ThreadWorker:
     def __init__(self, message_handler=None, exception_handler=None,
                     concurrency=1, max_in_flight=1, timeout=None, service_name="no_name", **kwargs):
@@ -23,32 +46,7 @@ class ThreadWorker:
         self.exception_handler = exception_handler
         self.timeout = timeout
         self.service_name = service_name
-
-        self.logger = ThreadWorker.get_logger()
-
-    @staticmethod
-    def get_logger():
-        logger = logging.getLogger("ThreadWorker")
-        if not logger.handlers:
-            parser = argparse.ArgumentParser()
-            parser.add_argument('--loglevel', nargs='?', help='log level', default='INFO')
-            args = parser.parse_args()
-
-            level = getattr(logging, args.loglevel.upper())
-            if not isinstance(level, int):
-                raise ValueError('Invalid log level: %s' % args.loglevel)
-
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-            handler = logging.StreamHandler(stream=sys.stdout)
-            handler.setFormatter(formatter)
-            handler.setLevel(level)
-
-            logger.addHandler(handler)
-            logger.setLevel(level)
-            logger.propagate = 0
-
-        return logger
+        self.logger = get_logger("ThreadWorker")
 
     @run_on_executor
     def _run_threaded_handler(self, message):
