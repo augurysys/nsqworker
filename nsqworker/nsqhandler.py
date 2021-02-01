@@ -150,7 +150,7 @@ class NSQHandler(NSQWriter):
             timeout=timeout,
             concurrency=concurrency,
             max_in_flight=max_in_flight,
-            topic=topic, channel=channel, **kwargs
+            topic=topic, channel=channel, service_name=service_name, **kwargs
         ).subscribe_worker()
 
         # self.routes = []

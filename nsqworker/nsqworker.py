@@ -104,13 +104,14 @@ class ThreadWorker:
         self.logger.debug("Finished handling message %s", message.id)
 
     def subscribe_worker(self):
-        kwargs = {k:v for k,v in self.kwargs.items()}
+        kwargs = {k: v for k, v in self.kwargs.items()}
 
         kwargs["message_handler"] = self._message_handler
         kwargs["max_in_flight"] = self.max_in_flight
 
         self.reader = nsq.Reader(**kwargs)
 
-        self.logger.info("Added an handler for NSQD messages on topic {}, channel {}.".format(self.kwargs["topic"],
-                                                                                              self.kwargs["channel"]))
-        self.logger.info("Handling messages with {} threads and {} max_in_flight.".format(self.concurrency, self.max_in_flight))
+        self.logger.info("Added an handler for NSQD messages on [service_name={}] [topic={}], [channel={}].".format(
+            self.kwargs["service_name"], self.kwargs["topic"], self.kwargs["channel"]))
+        self.logger.info("Handling messages with {} threads and {} max_in_flight.".format(
+            self.concurrency, self.max_in_flight))
