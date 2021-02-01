@@ -21,9 +21,8 @@ class ThreadWorker:
         self.kwargs = kwargs
         self.message_handler = message_handler
         self.exception_handler = exception_handler
-        self.timeout = timeout,
+        self.timeout = timeout
         self.service_name = service_name
-
 
         self.logger = ThreadWorker.get_logger()
 
