@@ -143,7 +143,7 @@ class NSQHandler(NSQWriter):
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
         self._persistor = MessagePersistor(self.logger)
-        register_nsq_topics_from_env(topic)
+        register_nsq_topics_from_env([topic])
         ThreadWorker(
             message_handler=self.handle_message,
             exception_handler=self.handle_exception,
