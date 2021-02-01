@@ -14,7 +14,7 @@ from auguryapi.metrics import measure_nsq_latency, measure_nsq_stats
 from tornado import ioloop
 
 from nsqworker import ThreadWorker
-from nsqworker.helpers import register_nsq_topics_from_env
+from helpers import register_nsq_topics_from_env
 from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
