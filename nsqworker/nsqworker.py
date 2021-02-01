@@ -13,7 +13,7 @@ from errors import TimeoutError
 
 class ThreadWorker:
     def __init__(self, message_handler=None, exception_handler=None,
-                    concurrency=1, max_in_flight=1, timeout=None, **kwargs):
+                    concurrency=1, max_in_flight=1, timeout=None, service_name="no_name", **kwargs):
         self.io_loop = ioloop.IOLoop.instance()
         self.executor = ThreadPoolExecutor(concurrency)
         self.concurrency = concurrency
@@ -21,7 +21,9 @@ class ThreadWorker:
         self.kwargs = kwargs
         self.message_handler = message_handler
         self.exception_handler = exception_handler
-        self.timeout = timeout
+        self.timeout = timeout,
+        self.service_name = service_name
+
 
         self.logger = ThreadWorker.get_logger()
 
@@ -108,6 +110,7 @@ class ThreadWorker:
 
         kwargs["message_handler"] = self._message_handler
         kwargs["max_in_flight"] = self.max_in_flight
+        kwargs["service_name"] = self.service_name
 
         self.reader = nsq.Reader(**kwargs)
 
