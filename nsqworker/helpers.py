@@ -26,16 +26,6 @@ def register_nsq_topics(nsqd_http_hosts, topic_names):
         topic_hosts[:] = [th for th in topic_hosts if not post_topic(*th)]
         sleep(1)
 
-
-def register_nsq_topics_from_env(topic_names):
-    nsqd_http = os.environ.get("NSQD_HTTP_ADDRESSES")
-    if not nsqd_http:
-        raise EnvironmentError("Please set NSQD_HTTP_ADDRESSES")
-    nsqd_http_hosts = [n for n in nsqd_http.split(",") if n]
-
-    register_nsq_topics(nsqd_http_hosts, topic_names)
-
-
 def post_topic(nsq_http, topic):
     try:
         res = requests.post(

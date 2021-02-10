@@ -14,7 +14,7 @@ from auguryapi.metrics import measure_nsq_latency, measure_nsq_stats
 from tornado import ioloop
 
 from nsqworker import ThreadWorker
-from helpers import register_nsq_topics_from_env
+from helpers import register_nsq_topics
 from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
 from redis import exceptions as redis_errors
@@ -143,7 +143,7 @@ class NSQHandler(NSQWriter):
         self._message_preprocessor = message_preprocessor if message_preprocessor else _identity
 
         self._persistor = MessagePersistor(self.logger)
-        register_nsq_topics_from_env([topic])
+        self.register_nsq_topics_from_env([topic])
         ThreadWorker(
             message_handler=self.handle_message,
             exception_handler=self.handle_exception,
@@ -154,6 +154,15 @@ class NSQHandler(NSQWriter):
         ).subscribe_worker()
 
         # self.routes = []
+
+    @classmethod
+    def register_nsq_topics_from_env(cls, topic_names):
+        nsqd_http = os.environ.get("NSQD_HTTP_ADDRESSES")
+        if not nsqd_http:
+            raise EnvironmentError("Please set NSQD_HTTP_ADDRESSES")
+        nsqd_http_hosts = [n for n in nsqd_http.split(",") if n]
+
+        register_nsq_topics(nsqd_http_hosts, topic_names)
 
     @classmethod
     def get_logger(cls, name=None):
