@@ -7,8 +7,10 @@ from concurrent.futures import ThreadPoolExecutor
 from tornado import gen
 from tornado import ioloop
 from tornado.concurrent import run_on_executor
-
-from errors import TimeoutError
+try:
+    from errors import TimeoutError
+except ModuleNotFoundError:
+    from nsqworker.errors import TimeoutError
 
 
 class ThreadWorker:
