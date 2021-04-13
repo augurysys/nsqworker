@@ -57,7 +57,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
                                       lookupd_http_addresses=lookupd_http_addresses,
                                       environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
     nsqd_node = random.choice(nsqd_nodes)
-    print(f"Selected random nsqd node: {nsqd_node}")
+    logging.info(f"Selected random nsqd node: {nsqd_node}")
     return nsqd_node
 
 
@@ -76,11 +76,11 @@ def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp
                 nsqd_host = f"{nsqd_address}:{nsqd_tcp_port}"
                 nsqd_nodes.append(nsqd_host)
     if len(nsqd_nodes) == 0:
-        print(f"Found no nsqd that hold the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
+        logging.warning(f"Found no nsqd that hold the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
         nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
         return _remove_empty_nsqd_nodes(nsqd_nodes)
 
-    print(f"Found the following nsq nodes: {nsqd_nodes}")
+    logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
     return _remove_empty_nsqd_nodes(nsqd_nodes)
 
 
