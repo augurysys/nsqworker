@@ -1,11 +1,13 @@
 import os
 import requests
 import logging
+import random
 from time import sleep
 
+NSQ_TOPIC_EXISTS = True
+NSQ_TOPIC_DOESNT_EXISTS = False
 
 def nsq_config_from_env():
-
     concurrency = int(os.environ.get("NSQ_CONCURRENCY", "1"))
     max_in_flight = int(os.environ.get("NSQ_MAX_IN_FLIGHT", "1"))
 
@@ -26,10 +28,11 @@ def register_nsq_topics(nsqd_http_hosts, topic_names):
         topic_hosts[:] = [th for th in topic_hosts if not post_topic(*th)]
         sleep(1)
 
+
 def post_topic(nsq_http, topic):
     try:
         res = requests.post(
-            "http://" + nsq_http + "/topic/create?topic="+str(topic), data="", timeout=1
+            "http://" + nsq_http + "/topic/create?topic=" + str(topic), data="", timeout=1
         )
         if res.status_code != 200:
             logging.warning(
@@ -46,3 +49,66 @@ def post_topic(nsq_http, topic):
             )
         )
         return False
+
+
+def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environment_nsqd_tcp_addresses=None):
+    if not lookupd_http_addresses:
+        raise Exception("Missing mandatory lookupd_http_addresses parameter")
+    if not environment_nsqd_tcp_addresses:
+        raise Exception("Missing mandatory environment_nsqd_tcp_addresses parameter")
+    nsqd_nodes, topic_exists = _discover_nsqd_nodes(nsq_topic=nsq_topic,
+                                      lookupd_http_addresses=lookupd_http_addresses,
+                                      environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
+    nsqd_node_tcp = random.choice(nsqd_nodes)
+    logging.info(f"Selected random nsqd node: {nsqd_node_tcp}")
+    nsqd_node_http = nsqd_node_tcp.replace("4150", "4151")
+    if not topic_exists:
+        logging.info(f"Topic [{nsq_topic}] doesn't exist, creating one.")
+        post_message_to_nsq(nsqd_http_address=nsqd_node_http,
+                            topic=nsq_topic,
+                            message_payload="Mocked payload")
+    return nsqd_node_tcp, nsqd_node_http
+
+
+def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
+    nsqd_nodes = list()
+    lookupds_endpoints = lookupd_http_addresses.split(",")
+
+    for lookup_endpoint in lookupds_endpoints:
+        producers_result = requests.get(f"http://{lookup_endpoint}/nodes")
+        producers_list = producers_result.json().get('producers')
+        for producer_dict in producers_list:
+            produced_topics_list = producer_dict.get("topics")
+            if nsq_topic in produced_topics_list:
+                nsqd_address = producer_dict.get("broadcast_address")
+                nsqd_tcp_port = producer_dict.get("tcp_port")
+                nsqd_host = f"{nsqd_address}:{nsqd_tcp_port}"
+                nsqd_nodes.append(nsqd_host)
+    if len(nsqd_nodes) == 0:
+        logging.warning(f"Found no nsqd that holds the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
+        nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
+        return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_DOESNT_EXISTS
+
+    logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
+    return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_EXISTS
+
+
+def _remove_empty_nsqd_nodes(nsqd_nodes):
+    return list(filter(lambda node: node not in [None, "None", ""],
+                       nsqd_nodes))
+
+
+def _post_using_requests(url, data):
+    return requests.post(url=url, data=data)
+
+
+def post_message_to_nsq(nsqd_http_address, topic, message_payload):
+    # Build post url
+    post_url = f"http://{nsqd_http_address}/pub?topic={topic}"
+    try:
+        post_result = _post_using_requests(url=post_url, data=message_payload)
+        logging.info(f"Published message: {message_payload}"[:100])
+        return post_result
+    except Exception as e:
+        logging.error(f"Failed to post result to {post_url}, Exception: {e}")
+        return None
