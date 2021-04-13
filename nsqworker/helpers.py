@@ -55,7 +55,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
         raise Exception("Missing mandatory lookupd_http_addresses parameter")
     if not environment_nsqd_tcp_addresses:
         raise Exception("Missing mandatory environment_nsqd_tcp_addresses parameter")
-    nsqd_nodes = _discover_nsqd_nodes(nsq_topic=nsq_topic,
+    nsqd_nodes, topic_exists = _discover_nsqd_nodes(nsq_topic=nsq_topic,
                                       lookupd_http_addresses=lookupd_http_addresses,
                                       environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
     nsqd_node = random.choice(nsqd_nodes)
