@@ -3,6 +3,8 @@ import requests
 import logging
 from time import sleep
 
+NSQ_TOPIC_EXISTS = True
+NSQ_TOPIC_DOESNT_EXISTS = False
 
 def nsq_config_from_env():
     concurrency = int(os.environ.get("NSQ_CONCURRENCY", "1"))
@@ -76,12 +78,12 @@ def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp
                 nsqd_host = f"{nsqd_address}:{nsqd_tcp_port}"
                 nsqd_nodes.append(nsqd_host)
     if len(nsqd_nodes) == 0:
-        logging.warning(f"Found no nsqd that hold the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
+        logging.warning(f"Found no nsqd that holds the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
         nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
-        return _remove_empty_nsqd_nodes(nsqd_nodes)
+        return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_DOESNT_EXISTS
 
     logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
-    return _remove_empty_nsqd_nodes(nsqd_nodes)
+    return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_EXISTS
 
 
 def _remove_empty_nsqd_nodes(nsqd_nodes):
