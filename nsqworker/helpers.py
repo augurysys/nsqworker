@@ -76,7 +76,7 @@ def _discover_nsqd(nsq_topic, lookupd_http_addresses=None):
                 nsqd_tcp_port = producer_dict.get("tcp_port")
                 nsqd_host = f"{nsqd_address}:{nsqd_tcp_port}"
                 nsqd_nodes_list.append(nsqd_host)
-    if len(lookupds_list) == 0:
+    if len(nsqd_nodes_list) == 0:
         external_logger.info(f"Found no nsqd that hold the topic [{nsq_topic}], "
                              f"defaulting to {environment_nsqd_tcp_addresses}")
         return environment_nsqd_tcp_addresses, topic_exists
