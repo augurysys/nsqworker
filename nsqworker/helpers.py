@@ -60,6 +60,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
     print(f"Selected random nsqd node: {nsqd_node}")
     return nsqd_node
 
+
 def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
     nsqd_nodes = list()
     lookupds_endpoints = lookupd_http_addresses.split(",")
