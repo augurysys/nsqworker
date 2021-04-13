@@ -59,15 +59,15 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
     nsqd_nodes, topic_exists = _discover_nsqd_nodes(nsq_topic=nsq_topic,
                                       lookupd_http_addresses=lookupd_http_addresses,
                                       environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
-    nsqd_node = random.choice(nsqd_nodes)
-    logging.info(f"Selected random nsqd node: {nsqd_node}")
-    nsqd_http = nsqd_node.replace("4150", "4151")
+    nsqd_node_tcp = random.choice(nsqd_nodes)
+    logging.info(f"Selected random nsqd node: {nsqd_node_tcp}")
+    nsqd_node_http = nsqd_node_tcp.replace("4150", "4151")
     if not topic_exists:
         logging.info(f"Topic [{nsq_topic}] doesn't exist, creating one.")
-        post_message_to_nsq(nsqd_http_address=nsqd_http,
+        post_message_to_nsq(nsqd_http_address=nsqd_node_http,
                             topic=nsq_topic,
                             message_payload="Mocked payload")
-    return nsqd_node
+    return nsqd_node_tcp, nsqd_node_http
 
 
 def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
