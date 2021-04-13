@@ -5,7 +5,6 @@ from time import sleep
 
 
 def nsq_config_from_env():
-
     concurrency = int(os.environ.get("NSQ_CONCURRENCY", "1"))
     max_in_flight = int(os.environ.get("NSQ_MAX_IN_FLIGHT", "1"))
 
@@ -26,10 +25,11 @@ def register_nsq_topics(nsqd_http_hosts, topic_names):
         topic_hosts[:] = [th for th in topic_hosts if not post_topic(*th)]
         sleep(1)
 
+
 def post_topic(nsq_http, topic):
     try:
         res = requests.post(
-            "http://" + nsq_http + "/topic/create?topic="+str(topic), data="", timeout=1
+            "http://" + nsq_http + "/topic/create?topic=" + str(topic), data="", timeout=1
         )
         if res.status_code != 200:
             logging.warning(
@@ -48,15 +48,23 @@ def post_topic(nsq_http, topic):
         return False
 
 
-def _discover_nsqd(nsq_topic, lookupd_http_addresses=None):
-    nsqd_nodes_list = list()
-    environment_nsqd_tcp_addresses = os.getenv("NSQD_DATA_SERVICES_TCP_ADDRESSES")
+def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environment_nsqd_tcp_addresses=None):
     if not lookupd_http_addresses:
-        environment_lookupd = os.getenv("LOOKUPD_HTTP_ADDRESSES")
-        lookupd_http_addresses = environment_lookupd if lookupd_http_addresses else ""
-    lookupds_list = lookupd_http_addresses.split(",")
+        raise Exception("Missing mandatory lookupd_http_addresses parameter")
+    if not environment_nsqd_tcp_addresses:
+        raise Exception("Missing mandatory environment_nsqd_tcp_addresses parameter")
+    nsqd_nodes = _discover_nsqd_nodes(nsq_topic=nsq_topic,
+                                      lookupd_http_addresses=lookupd_http_addresses,
+                                      environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
+    nsqd_node = random.choice(nsqd_nodes)
+    print(f"Selected random nsqd node: {nsqd_node}")
+    return nsqd_node
 
-    for lookup_endpoint in lookupds_list:
+def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
+    nsqd_nodes = list()
+    lookupds_endpoints = lookupd_http_addresses.split(",")
+
+    for lookup_endpoint in lookupds_endpoints:
         producers_result = requests.get(f"http://{lookup_endpoint}/nodes")
         producers_list = producers_result.json().get('producers')
         for producer_dict in producers_list:
@@ -65,24 +73,19 @@ def _discover_nsqd(nsq_topic, lookupd_http_addresses=None):
                 nsqd_address = producer_dict.get("broadcast_address")
                 nsqd_tcp_port = producer_dict.get("tcp_port")
                 nsqd_host = f"{nsqd_address}:{nsqd_tcp_port}"
-                nsqd_nodes_list.append(nsqd_host)
-    if len(nsqd_nodes_list) == 0:
+                nsqd_nodes.append(nsqd_host)
+    if len(nsqd_nodes) == 0:
         print(f"Found no nsqd that hold the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
-        nsqd_nodes_list = str(environment_nsqd_tcp_addresses).split(",")
-    else:
-        print(f"Found the following nsq nodes: {nsqd_nodes_list}")
-    # Remove empty list members
-    clean_nsqd_nodes_list = list(filter(lambda node: node not in [None, "None", ""],
-                                        nsqd_nodes_list))
-    return clean_nsqd_nodes_list
+        nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
+        return _remove_empty_nsqd_nodes(nsqd_nodes)
+
+    print(f"Found the following nsq nodes: {nsqd_nodes}")
+    return _remove_empty_nsqd_nodes(nsqd_nodes)
 
 
-def random_nsqd_selector(nsq_topic, lookupd_http_addresses=None):
-    nsqd_nodes_list = discover_nsqd(nsq_topic=nsq_topic,
-                                    lookupd_http_addresses=lookupd_http_addresses)
-    nsqd_host = random.choice(nsqd_nodes_list)
-    print(f"Selected random nsqd node: {nsqd_host}")
-    return nsqd_host
+def _remove_empty_nsqd_nodes(nsqd_nodes):
+    return list(filter(lambda node: node not in [None, "None", ""],
+                       nsqd_nodes))
 
 
 def _post_using_requests(url, data):
