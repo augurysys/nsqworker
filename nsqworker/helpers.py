@@ -61,7 +61,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
                                       environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
     nsqd_node = random.choice(nsqd_nodes)
     logging.info(f"Selected random nsqd node: {nsqd_node}")
-    nsqd_http = nsqd_tcp.replace("4150", "4151")
+    nsqd_http = nsqd_node.replace("4150", "4151")
     if not topic_exists:
         logging.info(f"Topic [{nsq_topic}] doesn't exist, creating one.")
         post_message_to_nsq(nsqd_http_address=nsqd_http,
@@ -107,8 +107,8 @@ def post_message_to_nsq(nsqd_http_address, topic, message_payload):
     post_url = f"http://{nsqd_http_address}/pub?topic={topic}"
     try:
         post_result = _post_using_requests(url=post_url, data=message_payload)
-        external_logger.info(f"Published message: {message_payload}"[:100])
+        logging.info(f"Published message: {message_payload}"[:100])
         return post_result
     except Exception as e:
-        external_logger.error(f"Failed to post result to {post_url}, Exception: {e}")
+        logging.error(f"Failed to post result to {post_url}, Exception: {e}")
         return None
