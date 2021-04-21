@@ -57,8 +57,8 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
     if not environment_nsqd_tcp_addresses:
         raise Exception("Missing mandatory environment_nsqd_tcp_addresses parameter")
     nsqd_nodes, topic_exists = _discover_nsqd_nodes(nsq_topic=nsq_topic,
-                                      lookupd_http_addresses=lookupd_http_addresses,
-                                      environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
+                                                    lookupd_http_addresses=lookupd_http_addresses,
+                                                    environment_nsqd_tcp_addresses=environment_nsqd_tcp_addresses)
     nsqd_node_tcp = random.choice(nsqd_nodes)
     logging.info(f"Selected random nsqd node: {nsqd_node_tcp}")
     nsqd_node_http = nsqd_node_tcp.replace("4150", "4151")
@@ -67,7 +67,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
         post_message_to_nsq(nsqd_http_address=nsqd_node_http,
                             topic=nsq_topic,
                             message_payload="Mocked payload")
-    return nsqd_node_tcp, nsqd_node_http
+    return nsqd_nodes, nsqd_node_http
 
 
 def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
