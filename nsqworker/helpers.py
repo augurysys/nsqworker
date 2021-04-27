@@ -69,6 +69,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
 
 def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
     nsqd_nodes = list()
+    topic_existence = None
     lookupds_endpoints = lookupd_http_addresses.split(",")
 
     for lookup_endpoint in lookupds_endpoints:
@@ -84,11 +85,13 @@ def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp
     if len(nsqd_nodes) == 0:
         logging.warning(f"Found no nsqd that holds the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
         nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
+        topic_existence = NSQ_TOPIC_DOESNT_EXISTS
     else:
         logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
+        topic_existence = NSQ_TOPIC_EXISTS
     nsqd_nodes = _remove_empty_values_from_list(list_of_values=nsqd_nodes)
     nsqd_nodes = _remove_duplicate_values_from_list(list_of_values=nsqd_nodes)
-    return nsqd_nodes, NSQ_TOPIC_EXISTS
+    return nsqd_nodes, topic_existence
 
 
 def _remove_empty_values_from_list(list_of_values):
