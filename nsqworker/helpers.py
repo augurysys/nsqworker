@@ -64,12 +64,11 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
     nsqd_node_http = nsqd_node_tcp.replace("4150", "4151")
     if not topic_exists:
         logging.warning(f"Topic [{nsq_topic}] doesn't exist - please create it.")
-    return nsqd_nodes, nsqd_node_http
+    return nsqd_nodes, nsqd_node_http, topic_exists
 
 
 def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp_addresses):
     nsqd_nodes = list()
-    topic_existence = None
     lookupds_endpoints = lookupd_http_addresses.split(",")
 
     for lookup_endpoint in lookupds_endpoints:
@@ -85,13 +84,13 @@ def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp
     if len(nsqd_nodes) == 0:
         logging.warning(f"Found no nsqd that holds the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
         nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
-        topic_existence = NSQ_TOPIC_DOESNT_EXISTS
+        topic_exists = NSQ_TOPIC_DOESNT_EXISTS
     else:
         logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
-        topic_existence = NSQ_TOPIC_EXISTS
+        topic_exists = NSQ_TOPIC_EXISTS
     nsqd_nodes = _remove_empty_values_from_list(list_of_values=nsqd_nodes)
     nsqd_nodes = _remove_duplicate_values_from_list(list_of_values=nsqd_nodes)
-    return nsqd_nodes, topic_existence
+    return nsqd_nodes, topic_exists
 
 
 def _remove_empty_values_from_list(list_of_values):
