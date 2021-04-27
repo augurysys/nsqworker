@@ -63,10 +63,7 @@ def random_nsqd_node_selector(nsq_topic, lookupd_http_addresses=None, environmen
     logging.info(f"Selected random nsqd node: {nsqd_node_tcp}")
     nsqd_node_http = nsqd_node_tcp.replace("4150", "4151")
     if not topic_exists:
-        logging.info(f"Topic [{nsq_topic}] doesn't exist, creating one.")
-        post_message_to_nsq(nsqd_http_address=nsqd_node_http,
-                            topic=nsq_topic,
-                            message_payload="Mocked payload")
+        logging.warning(f"Topic [{nsq_topic}] doesn't exist - please create it.")
     return nsqd_nodes, nsqd_node_http
 
 
@@ -87,15 +84,25 @@ def _discover_nsqd_nodes(nsq_topic, lookupd_http_addresses, environment_nsqd_tcp
     if len(nsqd_nodes) == 0:
         logging.warning(f"Found no nsqd that holds the topic {nsq_topic}, defaulting to {environment_nsqd_tcp_addresses}")
         nsqd_nodes = str(environment_nsqd_tcp_addresses).split(",")
-        return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_DOESNT_EXISTS
+    else:
+        logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
+    nsqd_nodes = _remove_empty_values_from_list(list_of_values=nsqd_nodes)
+    nsqd_nodes = _remove_duplicate_values_from_list(list_of_values=nsqd_nodes)
+    return nsqd_nodes, NSQ_TOPIC_EXISTS
 
-    logging.info(f"Found the following nsq nodes: {nsqd_nodes}")
-    return _remove_empty_nsqd_nodes(nsqd_nodes), NSQ_TOPIC_EXISTS
+
+def _remove_empty_values_from_list(list_of_values):
+    if not isinstance(list_of_values, list):
+        raise Exception(f"Input must be a list, got {type(list_of_values)} instead")
+    return list(filter(lambda element: element not in [None, "None", ""], list_of_values))
 
 
-def _remove_empty_nsqd_nodes(nsqd_nodes):
-    return list(filter(lambda node: node not in [None, "None", ""],
-                       nsqd_nodes))
+def _remove_duplicate_values_from_list(list_of_values):
+    if not isinstance(list_of_values, list):
+        raise Exception(f"Input must be a list, got {type(list_of_values)} instead")
+    return list(dict.fromkeys(list_of_values))
+
+
 
 
 def _post_using_requests(url, data):
