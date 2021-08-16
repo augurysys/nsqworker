@@ -105,8 +105,6 @@ def _remove_duplicate_values_from_list(list_of_values):
     return list(dict.fromkeys(list_of_values))
 
 
-
-
 def _post_using_requests(url, data):
     return requests.post(url=url, data=data)
 
@@ -114,10 +112,5 @@ def _post_using_requests(url, data):
 def post_message_to_nsq(nsqd_http_address, topic, message_payload):
     # Build post url
     post_url = f"http://{nsqd_http_address}/pub?topic={topic}"
-    try:
-        post_result = _post_using_requests(url=post_url, data=message_payload)
-        logging.info(f"Published message: {message_payload}"[:100])
-        return post_result
-    except Exception as e:
-        logging.error(f"Failed to post result to {post_url}, Exception: {e}")
-        return None
+    post_result = _post_using_requests(url=post_url, data=message_payload)
+    return post_result
