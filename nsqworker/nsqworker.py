@@ -66,7 +66,10 @@ class ThreadWorker:
 
         def touch():
             self.logger.debug("Sending touch event for message %s", message.id)
-            message.touch()
+            try:
+                message.touch()
+            except AssertionError:
+                self.logger.debug("touch() raised an exception - ignore it")
 
         p = ioloop.PeriodicCallback(touch, 30000)
         p.start()
