@@ -88,6 +88,7 @@ class Test(NSQHandler):
     def test(self, message):
         self.logger.info("Test")
 
+
 JSONPingPong("test", "pingpong")
 TextPingPong("test2", "pingpong2")
 ThirdPingPong("test3", "pingpong3")
@@ -95,8 +96,7 @@ Test("test4", "test")
 
 nsq.run()
 
-
-# TODO - add some sort of transform function to matchers? Motivation is so json messages 
+# TODO - add some sort of transform function to matchers? Motivation is so json messages
 #        reaching handler are already json.loads-ed and maybe even imbued with MDict
 # TODO - take get_logger outside of functions, maybe make it into it's own package
 # TODO - Add priorities

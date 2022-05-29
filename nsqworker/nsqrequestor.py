@@ -1,12 +1,12 @@
 import random
 import string
 import threading
+import time
+
 import tornado.ioloop
 
-from nsqwriter import NSQWriter
 from nsqhandler import NSQHandler
-
-import time
+from nsqwriter import NSQWriter
 
 
 class RequestorHandler(NSQHandler):

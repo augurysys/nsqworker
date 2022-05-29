@@ -1,8 +1,9 @@
-import os
-import requests
 import logging
+import os
 import random
 from time import sleep
+
+import requests
 
 NSQ_TOPIC_EXISTS = True
 NSQ_TOPIC_DOESNT_EXISTS = False

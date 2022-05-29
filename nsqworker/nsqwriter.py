@@ -1,12 +1,11 @@
-import os
-import sys
 import functools
 import logging
+import os
+import sys
 
-from tornado import ioloop
 import nsq
 from nsq import Error
-
+from tornado import ioloop
 
 BYTES_MAX_SIZE = os.environ.get('BYTES_MAX_SIZE', '1048576')
 if not BYTES_MAX_SIZE.isdigit():

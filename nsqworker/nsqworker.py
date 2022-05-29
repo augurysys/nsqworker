@@ -1,12 +1,13 @@
 import argparse
 import logging
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 import nsq
-from concurrent.futures import ThreadPoolExecutor
 from tornado import gen
 from tornado import ioloop
 from tornado.concurrent import run_on_executor
+
 try:
     from errors import TimeoutError
 except ModuleNotFoundError:
@@ -15,7 +16,7 @@ except ModuleNotFoundError:
 
 class ThreadWorker:
     def __init__(self, message_handler=None, exception_handler=None,
-                    concurrency=1, max_in_flight=1, timeout=None, service_name="no_name", **kwargs):
+                 concurrency=1, max_in_flight=1, timeout=None, service_name="no_name", **kwargs):
         self.io_loop = ioloop.IOLoop.instance()
         self.executor = ThreadPoolExecutor(concurrency)
         self.concurrency = concurrency
