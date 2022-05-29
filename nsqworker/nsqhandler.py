@@ -15,10 +15,10 @@ from redis import exceptions as redis_errors
 from tornado import ioloop
 
 import locker.redis_locker as _locker
-from helpers import register_nsq_topics
-from message_persistance import MessagePersistor
-from nsqworker import ThreadWorker
-from nsqwriter import NSQWriter
+from .helpers import register_nsq_topics
+from .message_persistance import MessagePersistor
+from .nsqworker import ThreadWorker
+from .nsqwriter import NSQWriter
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")

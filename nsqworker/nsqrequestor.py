@@ -5,8 +5,8 @@ import time
 
 import tornado.ioloop
 
-from nsqhandler import NSQHandler
-from nsqwriter import NSQWriter
+from .nsqhandler import NSQHandler
+from .nsqwriter import NSQWriter
 
 
 class RequestorHandler(NSQHandler):
