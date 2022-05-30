@@ -4,22 +4,21 @@ import os
 import random
 import string
 import sys
-import traceback
-from string import hexdigits
-from functools import wraps
 import time
+import traceback
+from functools import wraps
+from string import hexdigits
 
 import nsq
 from auguryapi.metrics import measure_nsq_latency, measure_nsq_stats
+from redis import exceptions as redis_errors
 from tornado import ioloop
 
-from nsqworker import ThreadWorker
-from helpers import register_nsq_topics
-from nsqwriter import NSQWriter
 import locker.redis_locker as _locker
-from redis import exceptions as redis_errors
-
-from message_persistance import MessagePersistor
+from .helpers import register_nsq_topics
+from .message_persistance import MessagePersistor
+from .nsqworker import ThreadWorker
+from .nsqwriter import NSQWriter
 
 # Fetch NSQD address
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
@@ -45,8 +44,10 @@ else:
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
+
 def get_random_string():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
+
 
 def load_routes(cls):
     """Class decorator for NSQHandler subclasses to load all routes
@@ -300,4 +301,3 @@ class NSQHandler(NSQWriter):
         self.logger.error(traceback.format_exc())
         if notify and self.raven_client is not None:
             self.raven_client.captureException(message=message.body, error_message=e.message, tags=tags)
-

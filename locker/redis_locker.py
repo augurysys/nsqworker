@@ -1,9 +1,8 @@
+import logging
 import os
-
-import redis as redis_client
 import time
 
-import logging
+import redis as redis_client
 
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
@@ -21,7 +20,9 @@ ERR_RETRY_DURATION = 0.05
 class LockerError(Exception):
     pass
 
+
 current_milli_time = lambda: int(round(time.time() * 1000))
+
 
 class RedisLocker:
     def __init__(self, service_name, logger=None):
@@ -41,6 +42,7 @@ class RedisLock:
     This class represent a redis lock object, it wraps ``redis.Lock`` class. A client who would like to lock a resource,
     should create this object and hold it. There are 2 main methods: lock, unlock
     """
+
     def __init__(self, key, lock_options, service_name, redis, logger):
         self.__lock_obj = redis.lock(name=self.get_key(service_name, key), timeout=lock_options.ttl,
                                      blocking_timeout=lock_options.timeout,
@@ -116,6 +118,7 @@ class NsqLockOptions(LockOptions):
     """
     Nsq Lock Object, should be used by nsq consumers
     """
+
     def __init__(self, path_to_id, is_mandatory=False, ttl=DEFAULT_TTL, timeout=DEFAULT_TIMEOUT,
                  retries=DEFAULT_RETRIES):
         """
