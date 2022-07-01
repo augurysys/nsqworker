@@ -89,11 +89,16 @@ class NSQWriter(object):
         delay = 1
 
         # Parse conn and data to decide whether message failed or not
-        # Parse conn and data to decide whether message failed or not
         if isinstance(data, Error) or conn is None or data != 'OK':
             # Message failed, re-send
             self.logger.error('[connection=%s] failed to PUBLISH [topic=%s], [data=%s]', conn.id if conn else 'NA',
                               topic, data)
+            if isinstance(data, Error):
+                self.logger.error("Reason: Response Error")
+            if conn is None:
+                self.logger.error("Reason: no connection")
+            if data != 'OK':
+                self.logger.error("Reason: response != 'OK'")
             self.logger.error("Message failed, waiting {} seconds before trying again..".format(delay))
             # Take a short break and then try to resend the message
             if isinstance(payload, str):
