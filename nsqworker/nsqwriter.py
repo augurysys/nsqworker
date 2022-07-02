@@ -16,6 +16,8 @@ BYTES_MAX_SIZE = int(BYTES_MAX_SIZE)
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
     NSQD_TCP_ADDRESSES.remove("")
+if len(NSQD_TCP_ADDRESSES) == 0:
+    raise EnvironmentError("Please set a number to the NSQD_TCP_ADDRESSES")
 
 
 class NSQWriter(object):
