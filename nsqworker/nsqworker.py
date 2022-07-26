@@ -62,11 +62,11 @@ class ThreadWorker:
         """
         :type message: nsq.Message
         """
-        self.logger.debug("Received message %s", message.id)
+        self.logger.info("Received message %s", message.id)
         message.enable_async()
 
         def touch():
-            self.logger.debug("Sending touch event for message %s", message.id)
+            self.logger.info("Sending touch event for message %s", message.id)
             try:
                 message.touch()
             except AssertionError:
@@ -79,9 +79,9 @@ class ThreadWorker:
             p.stop()
 
             error = \
-                "Message handler {} in {} for message {} exceeded timeout: {}".format(self.message_handler,
+                "Message handler {} in {} for message {} exceeded timeout".format(self.message_handler,
                                                                                       self.message_handler.__module__,
-                                                                                      message.id, message.body)
+                                                                                      message.id)
 
             self.logger.error(error)
             if self.exception_handler is not None:
@@ -96,7 +96,7 @@ class ThreadWorker:
             yield result
             result.exception()
         except Exception as e:
-            self.logger.debug("Message handler for message %s raised an exception", message.id)
+            self.logger.error("Message handler for message %s raised an exception", message.id)
             if self.exception_handler is not None:
                 self.exception_handler(message, e)
 
@@ -108,7 +108,7 @@ class ThreadWorker:
         if not message.has_responded():
             message.finish()
 
-        self.logger.debug("Finished handling message %s", message.id)
+        self.logger.info("Finished handling message %s", message.id)
 
     def subscribe_worker(self):
         kwargs = {k: v for k, v in self.kwargs.items()}
