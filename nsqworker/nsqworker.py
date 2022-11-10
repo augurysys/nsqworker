@@ -8,6 +8,8 @@ from tornado import gen
 from tornado import ioloop
 from tornado.concurrent import run_on_executor
 
+from nsqworker.helpers import check_if_not_in_flight
+
 try:
     from errors import TimeoutError
 except ModuleNotFoundError:
@@ -66,11 +68,14 @@ class ThreadWorker:
         message.enable_async()
 
         def touch():
-            self.logger.debug("Sending touch event for message %s", message.id)
             try:
                 message.touch()
-            except AssertionError:
-                self.logger.debug("touch() raised an exception - ignore it")
+            except Exception as e_:
+                if check_if_not_in_flight(e_):
+                    self.logger.error("Message ID not in flight. Stopping the execution of message %s", message.id)
+                    p.stop()
+                else:
+                    self.logger.debug("touch() raised an exception - ignore it")
 
         p = ioloop.PeriodicCallback(touch, 30000)
         p.start()

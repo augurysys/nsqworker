@@ -120,3 +120,9 @@ def post_message_to_nsq(nsqd_http_address, topic, message_payload):
     post_url = f"http://{nsqd_http_address_to_post}/pub?topic={topic}"
     post_result = _post_using_requests(url=post_url, data=message_payload)
     return post_result
+
+
+def check_if_not_in_flight(exception):
+    if "E_TOUCH_FAILED" in str(exception):
+        return True
+    return False
