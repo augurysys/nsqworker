@@ -255,7 +255,7 @@ class NSQHandler(NSQWriter):
 
                 status = "FAILED"
                 msg = "[{}] Handler {} failed handling message {} with error {}".format(
-                    route_id, handler.__name__, message.body, e.message)
+                    route_id, handler.__name__, message.body, e)
 
                 self.logger.error(msg)
                 self.handle_exception(message, e, tags={"route": handler.__name__, "error": "new NSQ failed event"})
@@ -300,4 +300,4 @@ class NSQHandler(NSQWriter):
         self.logger.error(error)
         self.logger.error(traceback.format_exc())
         if notify and self.raven_client is not None:
-            self.raven_client.captureException(message=message.body, error_message=e.message, tags=tags)
+            self.raven_client.captureException(message=message.body, error_message=e, tags=tags)
