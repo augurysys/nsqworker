@@ -6,6 +6,6 @@ setup(
     version='0.0.13',
     install_requires=['tornado==5.1.1', 'pynsq', 'futures; python_version == "2.7"', 'mdict', 'redis',
                       'auguryapi @ git+https://github.com/augurysys/auguryapi-py.git'
-                      '@53bc054fd72ad09178d20e4d1160641c7a0c46ad'
+                      '@e3cc09139a814d3253a6af9555d8b06fa7dcda5a'
                       ],
 )
