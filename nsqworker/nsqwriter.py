@@ -16,8 +16,6 @@ BYTES_MAX_SIZE = int(BYTES_MAX_SIZE)
 NSQD_TCP_ADDRESSES = os.environ.get('NSQD_TCP_ADDRESSES', "").split(",")
 if "" in NSQD_TCP_ADDRESSES:
     NSQD_TCP_ADDRESSES.remove("")
-if len(NSQD_TCP_ADDRESSES) == 0:
-    raise EnvironmentError("Please set a number to the NSQD_TCP_ADDRESSES")
 
 
 class NSQWriter(object):
@@ -65,8 +63,6 @@ class NSQWriter(object):
         if bytes_size > BYTES_MAX_SIZE:
             raise ValueError("Message is too big. message={} in topic={}".format(message, topic))
 
-        self.logger.info("Sending message using send_message")
-
         if delay is not None:
             self.io_loop.add_callback(self.writer.dpub, topic, delay, message, callback)
         else:
@@ -81,7 +77,6 @@ class NSQWriter(object):
         if self.writer is None:
             raise RuntimeError("Please provide an nsq.Writer object in order to send messages.")
 
-        self.logger.info("Sending message using send_messages")
         callback = functools.partial(self.finish_pub, topic=topic, payload=messages)
         self.io_loop.add_callback(self.writer.mpub, topic, messages, callback)
 
@@ -93,6 +88,7 @@ class NSQWriter(object):
         """
         delay = 1
 
+        # Parse conn and data to decide whether message failed or not
         # Parse conn and data to decide whether message failed or not
         if isinstance(data, Error) or conn is None or data != 'OK':
             # Message failed, re-send
