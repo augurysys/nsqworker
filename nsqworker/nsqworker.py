@@ -101,14 +101,12 @@ class ThreadWorker:
             self.logger.debug("Message handler for message %s raised an exception", message.id)
             if self.exception_handler is not None:
                 self.exception_handler(message, e)
-
-        p.stop()
-
-        if timeout is not None:
-            self.io_loop.remove_timeout(timeout)
-
-        if not message.has_responded():
-            message.finish()
+        finally:
+            p.stop()
+            if timeout is not None:
+                self.io_loop.remove_timeout(timeout)
+            if not message.has_responded():
+                message.finish()
 
         self.logger.debug("Finished handling message %s", message.id)
 
