@@ -62,8 +62,6 @@ class ThreadWorker:
         """
         :type message: nsq.Message
         """
-        if isinstance(message.body, bytes):
-            message.body = str(message.body, 'utf-8')
         self.logger.debug("Received message %s", message.id)
         message.enable_async()
 
