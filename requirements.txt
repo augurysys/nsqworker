@@ -2,4 +2,4 @@ tornado==4.5.3
 pynsq
 mdict
 redis
-git+ssh://git@github.com/augurysys/auguryapi-py.git
+git+ssh://git@github.com/augurysys/auguryapi-py.git@update-subs-srch-api
