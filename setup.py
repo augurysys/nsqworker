@@ -5,5 +5,5 @@ setup(
     packages=['nsqworker', 'locker'],
     version='0.0.26',
     install_requires=['tornado==4.5.3', 'pynsq', 'futures; python_version == "2.7"', 'mdict', 'redis',
-                      'auguryapi @ git+https://github.com/augurysys/auguryapi-py.git@added-logs'],
+                      'auguryapi @ git+https://github.com/augurysys/auguryapi-py.git@754f5d2f16dee1bc01ea055477c79ca295437dcc'],
 )
